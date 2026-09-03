@@ -1,0 +1,39 @@
+name: Build PDF on Release
+
+# 每当发布（publish）一个 release 时自动触发
+on:
+  release:
+    types: [published]
+
+# 上传附件需要 contents 写权限
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install TeX Live (XeLaTeX + Chinese support)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-xetex \
+            texlive-lang-chinese \
+            texlive-latex-extra \
+            texlive-fonts-recommended
+
+      - name: Compile (twice for TOC)
+        run: |
+          xelatex -interaction=nonstopmode main.tex
+          xelatex -interaction=nonstopmode main.tex
+
+      - name: Rename PDF with tag
+        run: cp main.pdf "algo-template-${{ github.ref_name }}.pdf"
+
+      - name: Upload PDF to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" "algo-template-${{ github.ref_name }}.pdf" --clobber
