@@ -1,0 +1,73 @@
+%!TEX program = xelatex
+\documentclass[UTF8]{ctexart}
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm}
+\usepackage{amsmath, amssymb}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+% 设置代码块样式
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{green!40!black},
+  stringstyle=\color{red},
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  frame=single,
+  language=C++,
+  showstringspaces=false,
+  tabsize=4
+}
+
+% 自定义命令
+\newcommand{\code}[1]{\texttt{#1}}
+
+% 导入自定义样式（可选）
+\usepackage{styles/mystyle}
+
+\begin{document}
+
+% ================= 封面页 =================
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+
+  % 若有校徽图片，可取消注释并准备 logo.png
+  % \includegraphics[width=0.2\textwidth]{logo.png}\\[1cm]
+
+  {\huge\bfseries 算法竞赛模板}\\[0.8cm]
+  {\Large 算法板子汇总}\\[2.5cm]
+
+  \noindent
+  \parbox{2.5cm}{\raggedleft 作\quad 者：}\parbox{6cm}{Your Name}\\[0.3cm]
+  \parbox{2.5cm}{\raggedleft 学\quad 号：}\parbox{6cm}{20240001}\\[0.3cm]
+  \parbox{2.5cm}{\raggedleft 所在学院：}\parbox{6cm}{计算机学院}\\[0.3cm]
+  \parbox{2.5cm}{\raggedleft 日\quad 期：}\parbox{6cm}{\today}\\[2cm]
+
+  \vfill
+\end{titlepage}
+\newpage
+% =========================================
+
+\section*{算法板子}
+\tableofcontents
+\newpage
+
+% ================= 正文章节 =================
+\include{sections/01-stdlib}
+\include{sections/02-datastructures}
+\include{sections/03-strings}
+\include{sections/04-geometry}
+\include{sections/05-graph}
+\include{sections/06-math}
+\include{sections/07-utilities}
+\include{sections/08-language}
+\include{sections/09-debug}
+\include{sections/10-optimization}
+
+\end{document}

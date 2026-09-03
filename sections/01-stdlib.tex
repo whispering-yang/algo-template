@@ -1,0 +1,238 @@
+\section{标准库方法}
+
+\subsection{数学库}
+
+\textbf{头文件}
+\lstinputlisting[language=C++]{codes/01-stdlib-01.cpp}
+
+\subsubsection{三角函数}
+
+\begin{tabular}{|l|l|l|}
+  \hline
+  数学功能 & 单精度/双精度函数名 & long double 重载 \\
+  \hline
+  正弦 (Sine) & \code{sinf()}, \code{sin()} & \code{sinl()} \\
+  余弦 (Cosine) & \code{cosf()}, \code{cos()} & \code{cosl()} \\
+  正切 (Tangent) & \code{tanf()}, \code{tan()} & \code{tanl()} \\
+  \hline
+\end{tabular}
+
+\subsubsection{反三角函数}
+
+\begin{tabular}{|l|l|l|}
+  \hline
+  数学功能 & 单精度/双精度函数名 & long double 重载 \\
+  \hline
+  反正弦 (Arcsine) & \code{asinf()}, \code{asin()} & \code{asinl()} \\
+  反余弦 (Arccosine) & \code{acosf()}, \code{acos()} & \code{acosl()} \\
+  反正切 (Arctangent) & \code{atanf()}, \code{atan()} & \code{atanl()} \\
+  反正切2 (Arctangent2) & \code{atan2f()}, \code{atan2()} & \code{atan2l()} \\
+  \hline
+\end{tabular}
+
+\begin{quote}
+  \textbf{注意：} 虽然可以直接使用 \code{std::asin(x)}（其中 \code{x} 是 \code{long double}），但为了代码意图明确，防止隐式转换，通常推荐使用带 \code{l} 后缀的显式版本（如 \code{asinl}, \code{atanl}）。
+\end{quote}
+
+\textbf{关于 \code{atan2()}}\\
+\code{atan2()} 通过两个坐标参数，可以准确判断点所在的象限，返回 $[-\pi, \pi]$ 的全角度范围。
+
+使用方法：\code{atan2(double y, double x)}
+
+\subsubsection{圆周率 \texorpdfstring{$\pi$}{pi}}
+
+标准 \code{<cmath>} 定义了 \code{M\_PI}，是圆周率的 \code{double} 版本。
+
+获取 \code{long double} 版本的圆周率最稳定的方法是调用 \code{std::acosl(-1.0L)}。
+
+\subsection{位操作库}
+
+\textbf{头文件}
+
+\lstinputlisting[language=C++]{codes/01-stdlib-02.cpp}
+
+C++20 在标准库中引入了位操作辅助函数，适用于无符号整数类型。
+
+\subsubsection{前导零与后缀零}
+
+\code{std::countl\_zero(x)} 返回二进制表示中高位（左侧）连续的 0 的个数，\code{std::countr\_zero(x)} 返回低位（右侧）连续的 0 的个数。
+
+\begin{tabular}{|l|l|}
+  \hline
+  功能 & 标准库函数 \\
+  \hline
+  计算前导零个数 & \code{std::countl\_zero(x)} \\
+  计算后缀零个数 & \code{std::countr\_zero(x)} \\
+  \hline
+\end{tabular}
+
+其中 \code{x} 应为无符号整数类型，例如 \code{unsigned int}、\code{unsigned long} 或 \code{unsigned long long}。
+
+对于零值，标准库定义：\code{std::countl\_zero(0)} 和 \code{std::countr\_zero(0)} 会返回类型位宽。
+
+GCC/Clang 的扩展函数提供类似功能，但需要注意零输入的行为：
+
+\begin{tabular}{|l|l|}
+  \hline
+  功能 & GCC/Clang 内建函数 \\
+  \hline
+  前导零个数 & \code{\_\_builtin\_clz(x)}, \code{\_\_builtin\_clzl(x)}, \code{\_\_builtin\_clzll(x)} \\
+  后缀零个数 & \code{\_\_builtin\_ctz(x)}, \code{\_\_builtin\_ctzl(x)}, \code{\_\_builtin\_ctzll(x)} \\
+  \hline
+\end{tabular}
+
+注意：\code{\_\_builtin\_clz(0)} 和 \code{\_\_builtin\_ctz(0)} 在 GCC/Clang 中未定义；使用前应对零值单独处理。
+
+\subsubsection{1 的个数 (Popcount)}
+
+\code{std::popcount(x)} 返回二进制表示中 1 的个数（即汉明重量）。
+
+\begin{tabular}{|l|l|}
+  \hline
+  功能 & 标准库函数 \\
+  \hline
+  计算二进制中 1 的个数 & \code{std::popcount(x)} \\
+  \hline
+\end{tabular}
+
+对于零值，\code{std::popcount(0)} 返回 0。
+
+GCC/Clang 内建函数：
+
+\begin{tabular}{|l|l|}
+  \hline
+  功能 & GCC/Clang 内建函数 \\
+  \hline
+  1 的个数 & \code{\_\_builtin\_popcount(x)}, \code{\_\_builtin\_popcountl(x)}, \code{\_\_builtin\_popcountll(x)} \\
+  \hline
+\end{tabular}
+
+\subsubsection{对齐与位宽}
+
+C++20 还提供了一组和 2 的幂、位宽相关的函数，常用于数论和位运算优化：
+
+\begin{tabular}{|l|l|}
+  \hline
+  功能 & 标准库函数 \\
+  \hline
+  向上取整到 2 的幂 & \code{std::bit\_ceil(x)} \\
+  向下取整到 2 的幂 & \code{std::bit\_floor(x)} \\
+  计算二进制位宽 & \code{std::bit\_width(x)} \\
+  判断是否只有一个 1 位 & \code{std::has\_single\_bit(x)} \\
+  \hline
+\end{tabular}
+
+其中 \code{x} 必须是无符号整数类型；当 \code{x = 0} 时，\code{std::bit\_width(0)} 返回 0。
+
+\subsubsection{循环左移与右移}
+
+\code{std::rotl(x, s)} 和 \code{std::rotr(x, s)} 可对无符号整数做循环移位，适合做位图、哈希和低层数据处理。
+
+\begin{quote}
+  \textbf{注意：} 移位量通常应取模为类型位宽，避免不必要的歧义。
+\end{quote}
+
+\subsubsection{字节交换与前导/后缀 1}
+
+\code{std::byteswap(x)} 可以交换整数的字节序，常用于跨平台数据处理。若要统计 1 的前导/后缀个数，也可以使用 \code{std::countl\_one(x)} 和 \code{std::countr\_one(x)}。
+
+\subsection{复数库}
+
+\textbf{头文件}
+\lstinputlisting[language=C++]{codes/01-stdlib-03.cpp}
+
+C++ 标准库提供了对复数的支持，主要通过模板类 \code{std::complex<T>}（通常使用 \code{T = double}）。常见功能包括复数构造、模和幅角计算、共轭、实部虚部访问，以及与复数相关的数学函数。
+
+\begin{tabular}{|l|l|}
+  \hline
+  功能 & 标准库函数 / 表达式 \\
+  \hline
+  复数类型 & \code{std::complex<T>} \\
+  构造（直角） & \code{std::complex<double>(real, imag)} \\
+  从极坐标构造 & \code{std::polar(r, theta)} \\
+  模（幅值） & \code{std::abs(z)} \\
+  幅角（相位） & \code{std::arg(z)} \\
+  平方模 & \code{std::norm(z)} \\
+  共轭 & \code{std::conj(z)} \\
+  实部 / 虚部 & \code{std::real(z)}, \code{std::imag(z)} \\
+  指数/对数/幂 & \code{std::exp(z)}, \code{std::log(z)}, \code{std::pow(z, w)} \\
+  投影 & \code{std::proj(z)} \\
+  \hline
+\end{tabular}
+
+注意：`std` 中的大多数数学函数对复数有重载版本（例如 \code{std::sqrt}, \code{std::exp} 等），可直接传入 \code{std::complex<T>}。
+
+示例代码（见下）：
+\lstinputlisting[language=C++]{codes/01-stdlib-complex-01.cpp}
+
+\subsection{空值表达 (Nullable Values)}
+
+\textbf{用途：}许多查询的答案可能不存在——逆元可能不存在、区间内可能没有满足条件的元素、图中可能没有路径。表达“可能为空”的返回值，传统做法是约定哨兵值 (Sentinel Value)，如 \code{std::string::npos}、迭代器 \code{end()} 或 $-1$；C++17 起标准库提供了类型安全的 \code{std::optional}。
+
+\textbf{头文件}
+\lstinputlisting[language=C++]{codes/01-stdlib-04.cpp}
+
+\subsubsection{各方案对比与最低标准}
+
+\noindent\begin{tabularx}{\textwidth}{|l|l|>{\raggedright\arraybackslash}X|}
+  \hline
+  方案 & 最低标准 & 说明 \\
+  \hline
+  哨兵值（$-1$、\code{npos}） & C++98 & 零额外开销，但“无结果”可能与合法返回值混淆，依赖双方约定 \\
+  \code{std::pair<bool, T>} & C++98 & 判断直接，但无值时仍需默认构造一个 \code{T}，字段含义靠命名约定 \\
+  \code{std::optional<T>} & C++17 & 类型安全、无堆分配，语义明确，推荐写法 \\
+  \code{std::variant<T, ...>} & C++17 & 表达多种互斥状态之一，比 optional 更一般 \\
+  \hline
+\end{tabularx}
+
+\subsubsection{std::optional 基本用法}
+
+\noindent\begin{tabularx}{\textwidth}{|l|l|>{\raggedright\arraybackslash}X|}
+  \hline
+  功能 & 表达式 & 说明 \\
+  \hline
+  构造空值 & \code{std::optional<T> x;} & 默认构造为空 \\
+  构造有值 & \code{x = v;} 或 \code{std::make\_optional(v)} & \\
+  判断是否有值 & \code{x.has\_value()} 或 \code{if (x)} & \\
+  访问（不检查） & \code{*x}，\code{x->member} & 空时解引用是未定义行为 \\
+  访问（检查） & \code{x.value()} & 空时抛出 \code{std::bad\_optional\_access} \\
+  取值或默认值 & \code{x.value\_or(d)} & 空时返回 \code{d} \\
+  置空 & \code{x.reset()} 或 \code{x = std::nullopt;} & \\
+  原地构造 & \code{x.emplace(args...)} & 避免构造临时对象再移动 \\
+  \hline
+\end{tabularx}
+
+\begin{quote}
+  \textbf{注意：} \code{std::optional<T\&>} 不存在（引用不是对象类型）。需要“可能为空的引用”时，用 \code{std::optional<std::reference\_wrapper<T>>} 配合 \code{std::ref(v)}（均为 C++17）。
+\end{quote}
+
+\subsubsection{std::variant 与 std::monostate}
+
+\code{std::variant<A, B>} 表示“当前持有 A 或 B 之一”，相当于带类型标签的轻量联合体，同样无堆分配。需要表达“空”的状态时，用空类 \code{std::monostate} 作为其中一个变体：
+
+\begin{tabular}{|l|l|}
+  \hline
+  功能 & 表达式 \\
+  \hline
+  定义 & \code{std::variant<std::monostate, int, double> v;} \\
+  判断当前持有类型 & \code{std::holds\_alternative<int>(v)} \\
+  按类型取值（错误时抛异常） & \code{std::get<int>(v)} \\
+  按下标取值 & \code{std::get<1>(v)} \\
+  按类型分发处理 & \code{std::visit(visitor, v)} \\
+  \hline
+\end{tabular}
+
+\subsubsection{性能问题}
+
+\begin{itemize}
+  \item \textbf{无堆分配：}\code{optional<T>} 将值内联存储，空标志位利用 \code{T} 的对齐填充。在 64 位平台上，\code{optional<int>} 占 8 字节（值 4 + 标志 1 + 填充 3）；\code{optional<long long>} 占 16 字节；libstdc++ 中的 \code{optional<std::string>} 占 40 字节。
+  \item \textbf{空间放大：}\code{vector<optional<int>>} 每元素占 8 字节，是 \code{vector<int>} 的两倍，缓存局部性变差。大数组存“可能为空”的值时，优先考虑哨兵值。
+  \item \textbf{异常路径：}\code{value()} 空时抛出异常，竞赛代码通常应避免异常；热路径用 \code{if (x)} 判断后以 \code{*x} 访问。
+  \item \textbf{急切求值：}\code{value\_or(d)} 的 \code{d} 总是被求值（即使 \code{x} 有值）；默认值计算昂贵时改用 \code{if} 分支。
+  \item \textbf{拷贝语义：}拷贝 \code{optional} 即拷贝所含对象本身；传参用 \code{const\&}，转移所有权用 \code{std::move}（\code{optional} 的移动即所含值的移动）。
+  \item \textbf{热循环：}哨兵值在紧密循环中通常仍最快（无标志位、无分支、对优化器友好）；\code{optional} 的收益在可读性与类型安全，适合构造、查询次数不多的场景。
+  \item \textbf{variant 的大小：}\code{std::variant} 的大小约为“最大变体 + 判别标签（同样利用填充）”，对齐取所有变体中最严格者。
+\end{itemize}
+
+示例代码（逆元不存在、查找无结果是两个典型场景）：
+\lstinputlisting[language=C++]{codes/01-stdlib-optional-01.cpp}

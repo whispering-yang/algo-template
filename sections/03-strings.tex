@@ -1,0 +1,215 @@
+\section{字符串}
+
+\subsection{KMP 算法 (Knuth-Morris-Pratt)}
+
+\textbf{用途：} 在线性时间内解决单模式串匹配问题——给定文本串 $T$ 和模式串 $P$，找出 $P$ 在 $T$ 中所有出现的位置。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{前缀函数 $\pi[i]$：} 对于字符串 $s$ 的前缀 $s[0..i]$，$\pi[i]$ 表示该前缀的\textbf{最长真前缀}，且该真前缀同时也是该前缀的\textbf{后缀}。即满足 $s[0..k-1] = s[i-k+1..i]$ 的最大 $k < i+1$。
+  \item \textbf{拼接技巧：} 构造 $s = P + \# + T$，其中 $\#$ 为不在字符集中的分隔符，保证前缀函数不会越过模式串与文本串的边界。
+  \item \textbf{匹配判定：} 对 $s$ 计算前缀函数，每当 $\pi[i] = |P|$ 时即发现一个完整匹配，匹配起始位置为 $i - 2|P|$。
+  \item \textbf{失配回退：} 利用 $\pi[j-1]$ 直接跳转到下一个可能匹配的位置，避免暴力回溯。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item 构造 $s = P + \# + T$。
+  \item 从 $i=1$ 开始遍历 $s$，维护 $j$ 表示当前匹配的前缀长度：字符不匹配时回退 $j = \pi[j-1]$，匹配成功则 $j$ 加一并记录 $\pi[i] = j$。
+  \item 当 $\pi[i] = |P|$ 时记录答案位置 $i - 2|P|$，然后继续遍历。
+\end{enumerate}
+
+\textbf{时间复杂度分析：}
+设模式串长度为 $m = |P|$，文本串长度为 $n = |T|$。构造 $s$ 后只需一次遍历，指针 $j$ 每次最多增加 $1$，总共增加不超过 $n+m+1$ 次；每次回退至少减少 $1$，总回退次数也不超过 $n+m+1$。整体时间复杂度为 $O(n + m)$，空间复杂度为 $O(n + m)$。
+
+\lstinputlisting[language=C++]{codes/03-strings-01.cpp}
+
+\subsection{AC自动机 (Aho-Corasick Automaton)}
+
+\textbf{用途：} 在线性时间内解决多模式串匹配问题——给定文本串 $T$ 和模式串集合 $\{P_1,\dots,P_k\}$，统计每个模式串的出现次数或位置。
+
+\textbf{核心结构：}
+\begin{itemize}
+  \item \textbf{Trie 树：} 插入所有模式串，每个节点代表一个前缀。
+  \item \textbf{fail 指针：} $\text{fail}[u]$ 指向节点 $u$ 所代表字符串的\textbf{最长后缀}，使得该后缀也是某个模式串的前缀。
+  \item \textbf{Trie 图：} 在构建 fail 的同时将不存在的子边直接指向 $\text{next}[\text{fail}[u]][c]$，使匹配过程无回溯。
+  \item \textbf{fail 树：} 将所有 fail 边反向形成一棵树，用于匹配后自底向上汇总出现次数。
+\end{itemize}
+
+\textbf{构建与匹配流程：}
+\begin{enumerate}
+  \item 将模式串逐个插入 Trie，记录终止节点。
+  \item BFS 逐层构建 fail 指针并补全转移边，得到 Trie 图。
+  \item 遍历文本串 $T$，在 Trie 图上逐步转移，每到达一个节点便增加其访问次数 $\text{cnt}[u]$。
+  \item 在 fail 树上做一次 DFS，将子节点的 $\text{cnt}$ 累加到父节点，最终每个节点的 $\text{cnt}$ 即为其代表前缀的总出现次数。
+\end{enumerate}
+
+\textbf{时间复杂度分析：}
+设字符集大小为 $\Sigma$（常数），模式串总长度为 $M = \sum |P_i|$，文本串长度为 $N = |T|$。
+\begin{itemize}
+  \item 建 Trie：每个模式串字符访问一次，$O(M)$。
+  \item 构建 fail 与 Trie 图：BFS 中每个节点每条边均摊 $O(1)$，总共 $O(|\Sigma| \cdot M) = O(M)$（$|\Sigma|$ 为常数）。
+  \item 匹配：在 Trie 图上遍历文本串，每个字符进行常数次转移，$O(N)$。
+  \item fail 树累加：每个节点访问一次，$O(M)$。
+\end{itemize}
+因此整体时间复杂度为 $O(N + M)$，即与输入规模成线性关系。
+
+\lstinputlisting[language=C++]{codes/03-strings-02.cpp}
+
+\subsection{后缀自动机 (Suffix Automaton, SAM)}
+
+\textbf{用途：} 在线性时间内处理一个字符串的所有子串相关问题，例如查询某个子串是否出现、不同子串个数、所有子串的总长度、最长公共子串、字典序第 $k$ 小子串等。
+
+\textbf{核心结构：}
+\begin{itemize}
+  \item \textbf{状态与转移：} 每个状态对应一个 \textbf{endpos} 等价类，即出现位置集合完全相同的一批子串。转移边 $\text{next}[u][c]$ 表示在当前等价类的某个子串后添加字符 $c$ 所到达的等价类。
+  \item \textbf{link 指针（后缀链接）：} $\text{link}[u]$ 指向当前等价类中最长串的\textbf{最长后缀}所属的、且 endpos 集合更大的等价类。所有 link 构成一棵有根树（Parent 树）。
+  \item \textbf{增量构建：} 每次在字符串末尾添加一个字符，动态维护自动机的状态与转移，保证状态数不超过 $2n-1$，转移数不超过 $3n-4$（$n$ 为字符串长度）。
+\end{itemize}
+
+\textbf{构建流程（在线算法）：}
+\begin{enumerate}
+  \item 初始时只有一个状态 $0$（代表空串），$\text{len}[0]=0$，$\text{link}[0]=-1$。
+  \item 逐个插入字符 $c$（设当前整个字符串的长度为 $n$）：
+    \begin{itemize}
+      \item 新建状态 $cur$，$\text{len}[cur] = n$。
+      \item 从上一个插入的终止状态 $last$ 开始，沿 link 链向上遍历，若某个状态 $p$ 没有 $c$ 的转移边，则添加 $\text{next}[p][c] = cur$；直到遇到已有 $c$ 转移边的状态 $p$ 或到达根。
+      \item 若最终未找到已有转移，则 $\text{link}[cur] = 0$；
+      \item 否则，设 $p$ 经 $c$ 转移到 $q$。若 $\text{len}[p] + 1 = \text{len}[q]$，则 $\text{link}[cur] = q$；
+      \item 否则，需要"克隆"状态 $q$：新建状态 $clone$，复制 $q$ 的全部转移和 link，且 $\text{len}[clone] = \text{len}[p] + 1$。然后将 $q$ 和 $cur$ 的 link 都设为 $clone$，并继续沿 $p$ 的 link 链向上，将之前指向 $q$ 的转移改为指向 $clone$。
+    \end{itemize}
+  \item 插入完成后，$last$ 更新为 $cur$。
+\end{enumerate}
+
+\textbf{时间复杂度分析：}
+设字符串长度为 $n$，字符集大小为常数。
+\begin{itemize}
+  \item 每插入一个字符，新建状态和转移的均摊代价为 $O(1)$，总状态数 $\leq 2n-1$，总转移数 $\leq 3n-4$。
+  \item 遍历 link 链插入转移、克隆等操作的均摊复杂度也是 $O(1)$（因为每次操作会使后续遍历的深度减小）。
+\end{itemize}
+因此整体时间复杂度为 $O(n)$，空间复杂度也为 $O(n)$，均与字符串长度成线性关系。
+
+\textbf{例题：}
+
+给定一个长度为 $n$ 的字符串 $S$ ，求 $S$ 中本质不同的子串个数。
+本质不同的子串指内容不同的子串，相同内容的子串只计一次。
+
+\lstinputlisting[language=C++]{codes/03-strings-03.cpp}
+
+\subsubsection{子串出现次数 (endpos 大小统计)}
+
+\textbf{用途：} 统计每个子串在原串中的出现次数，即求每个状态的 endpos 集合大小。
+
+\textbf{核心原理：}
+\begin{itemize}
+  \item 状态 $v$ 的 endpos 大小等于 Parent 树上 $v$ 的子树中「代表某个前缀的状态」个数，因此把各前缀状态的初始计数沿 link 上传合并即可。
+  \item \textbf{初始值：} \code{extend} 中新建的状态 $cur$ 恰好代表一个前缀，初始 $\text{cnt}[cur] = 1$；clone 状态不代表任何前缀，初始 $\text{cnt} = 0$。
+  \item \textbf{累加方式：} 按 len 从大到小处理状态，将 $\text{cnt}[v]$ 累加到 $\text{cnt}[\text{link}[v]]$ 上。该顺序即 Parent 树「从叶到根」的拓扑序，用桶排序即可直接得到，无需显式建树。
+  \item 统计完成后，状态 $v$ 所代表的全部子串（长度区间 $(\text{len}[\text{link}[v]],\, \text{len}[v]]$ 内）出现次数均为 $\text{cnt}[v]$。
+\end{itemize}
+
+\textbf{时间复杂度：} 桶排序与一次遍历累加，总共 $O(n)$。
+
+\textbf{例题：} P3804 【模板】后缀自动机——求所有出现次数大于 $1$ 的子串中，出现次数乘以子串长度的最大值。
+
+\lstinputlisting[language=C++]{codes/03-strings-04.cpp}
+
+\subsubsection{最长公共子串 (Longest Common Substring)}
+
+\textbf{用途：} 求两个字符串 $S$、$T$ 的最长公共子串长度。
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item 对 $S$ 建立 SAM，从初始状态出发令 $T$ 在自动机上匹配，维护当前状态 $v$ 与当前匹配长度 $l$（初始均为 $0$）。
+  \item 逐个处理 $T$ 的字符 $c$：若 $v$ 存在字符 $c$ 的转移，则转移过去并令 $l \leftarrow l + 1$。
+  \item 否则沿 link 回跳——后缀变短、endpos 集合变大，更可能存在 $c$ 的转移——每跳一步令 $l = \text{len}[v]$，直到存在转移或回到初始状态。
+  \item 匹配过程中 $l$ 的最大值即为最长公共子串长度。
+\end{enumerate}
+
+\textbf{多串推广：} 对第一个串建 SAM，其余每个串都跑一遍上述匹配，对每个状态记录「各串匹配长度的最小值」，再在 Parent 树上自底向上用子状态的值更新祖先（不超过祖先 $\text{len}$ 的限制），最后取全局最大值。
+
+\textbf{时间复杂度：} 建立 SAM 为 $O(|S|)$；匹配过程中 $l$ 每步至多增加 $1$、每次回跳严格减小，总计 $O(|T|)$。整体 $O(|S| + |T|)$。
+
+\textbf{例题：} SP1811 LCS——求两个字符串的最长公共子串长度。
+
+\lstinputlisting[language=C++]{codes/03-strings-05.cpp}
+
+\subsubsection{字典序第 k 小子串}
+
+\textbf{用途：} 求字符串的所有子串中字典序第 $k$ 小的子串（相同子串计一次，或按出现次数计多次）。
+
+\textbf{核心原理：}
+\begin{itemize}
+  \item SAM 的转移边构成一张 DAG，从初始状态出发的每条路径一一对应一个本质不同子串，且路径的字典序与子串的字典序一致。
+  \item 设 $sum[v]$ 为从状态 $v$ 出发（含在 $v$ 处结束）能构成的子串个数。转移边终点的 len 严格更大，因此按 len 降序递推恰为 DAG 的拓扑逆序：$sum[v] = e[v] + \sum_{c} sum[\text{next}[v][c]]$，其中「在 $v$ 处结束」的贡献 $e[v]$ 取 $1$（$t=0$，本质不同）或 $\text{cnt}[v]$（$t=1$，按出现次数计，cnt 为 endpos 大小）。
+  \item 两种口径共用同一次递推，分别存于 $sum[v][0]$ 与 $sum[v][1]$；endpos 统计的桶排序与该递推合并在 \code{build\_cnt\_and\_sum} 中一次完成。
+  \item 查询 \code{find\_kth} 从初始状态出发按字符从小到大枚举：若 $k$ 大于走该字符后能构成的子串数则减去后继续，否则走这条转移并扣除在终点状态结束的贡献，逐位确定答案；无解时返回 \code{nullopt}，输出 $-1$。
+\end{itemize}
+
+\textbf{时间复杂度：} 预处理与查询均为 $O(n \cdot |\Sigma|)$（$|\Sigma|$ 为字符集大小）。子串总数可达 $\frac{n(n+1)}{2}$，$sum$ 值与 $k$ 均需用 \code{long long}。
+
+\begin{quote}
+\textbf{注意（易错点）：}
+\begin{itemize}
+  \item \textbf{根状态的贡献必须特判：} 根代表空串，空串不计入统计。递推时根不能有「在自身结束」的贡献，查询中每进入一个状态扣除该状态「结束贡献」时同样要跳过根——两处只要漏掉任意一处，空串就会被（或不会被）计入，答案整体偏移一位，越界判断也随之失效。
+  \item \textbf{$k$ 必须用 \code{long long} 读入：} $t=1$ 时子串总数可达 $\frac{n(n+1)}{2}$，$k$ 完全可能超出 \code{int} 范围，用 \code{int} 读入会溢出得到错误答案。
+  \item 代码中 \code{show()} 使用了 \code{std::format}，整个文件需以 C++20 编译；该函数仅用于本地调试，在只支持 C++17 的环境提交时可将其删去。
+\end{itemize}
+\end{quote}
+
+\textbf{例题：} P3975 [TJOI2015] 弦论——$t=0$ 时求本质不同子串中第 $k$ 小，$t=1$ 时求所有子串（相同子串按出现次数计）中第 $k$ 小。
+
+\lstinputlisting[language=C++]{codes/03-strings-06.cpp}
+
+\subsubsection{其他常见应用}
+
+以下应用思路常见，模板从略：
+\begin{itemize}
+  \item \textbf{所有子串的总长度：} 每个状态贡献一段等差数列 $\frac{(\text{len}[v] + \text{len}[\text{link}[v]] + 1)\,(\text{len}[v] - \text{len}[\text{link}[v]])}{2}$，对所有状态求和。
+  \item \textbf{最小循环移位：} 对 $S + S$ 建立 SAM，从初始状态出发每步走字典序最小的转移，走 $|S|$ 步即得最小表示。
+  \item \textbf{子串的所有出现位置：} 用线段树合并（或 set 启发式合并）在 Parent 树上维护每个状态的 endpos 集合，可回答「子串在某区间内是否出现、出现几次」等定位问题。
+  \item \textbf{两串公共子串计数：} 令 $T$ 在 $S$ 的 SAM 上匹配并对每个前缀记录匹配长度，再在 Parent 树上自底向上累加，即可统计两串公共子串的总个数。
+\end{itemize}
+
+\subsection{广义后缀自动机 (Generalized Suffix Automaton, GSAM)}
+
+\textbf{用途：} 将多个字符串的所有子串放进同一个自动机，处理多串的子串问题——如所有串的本质不同子串个数、某个子串在所有串中的总出现次数等。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{Trie + BFS 离线建法（推荐）：} 先把所有串插入同一棵 Trie（公共前缀自动共享节点），再按 BFS 序把每条 Trie 边逐条插入 SAM。
+  \item \textbf{insert 与 extend 的区别：} 同一 Trie 节点被多条串共用，插入某条边时转移 $(p, c)$ 可能已经存在，必须先检查：
+    \begin{itemize}
+      \item 情况 A（不存在）：与在线 extend 完全相同——新建状态并沿 link 补转移，必要时克隆。
+      \item 情况 B（存在且连续，$\text{len}[q] = \text{len}[p] + 1$）：直接复用状态 $q$，不新建。
+      \item 情况 C（存在但不连续）：克隆分裂 $q$，并返回 clone 而不是 $q$。
+    \end{itemize}
+  \item \textbf{出现次数统计：} Trie 合并了公共前缀，不能照搬单串 SAM「每个新建状态 cnt = 1」的写法。正确做法是给 Trie 节点赋权：结尾节点标记 $tw[u] \mathrel{+}= 1$，按 BFS 序逆序累加得到「经过节点 $u$ 的字符串条数」，建机时把权重挂到对应状态上，最后在 Parent 树上按 len 降序累加。
+\end{itemize}
+
+\textbf{构建流程：}
+\begin{enumerate}
+  \item 所有串插入同一棵 Trie，并在每个串的结尾节点处 $tw[u] \mathrel{+}= 1$。
+  \item 从根 BFS，求出每个节点的父节点 fa 与入边字符 fc，同时得到 BFS 序。
+  \item 按 BFS 序逆序累加 $tw[\text{fa}[u]] \mathrel{+}= tw[u]$，使 $tw[u]$ 变为「经过节点 $u$ 的字符串条数」。
+  \item 按 BFS 序逐边插入：$\text{tstate}[u] = \text{insert}(\text{tstate}[\text{fa}[u]],\, \text{fc}[u])$，并令 $\text{cnt}[\text{tstate}[u]] \mathrel{+}= tw[u]$。
+  \item 按 len 降序在 Parent 树上累加 cnt（与单串 SAM 完全相同）。
+\end{enumerate}
+
+\textbf{为什么必须 BFS 序：} insert 要求处理某节点时其父节点对应的 SAM 状态已确定，且状态 len 沿 Trie 深度严格加一，均摊复杂度分析才成立；DFS 序在「深链挂短枝」的 Trie 结构下可被卡到平方级。
+
+\textbf{时间复杂度：} 设 Trie 节点数为 $T$，状态数不超过 $2T$，构建与统计共 $O(T \cdot |\Sigma|)$。卡内存时可将数组转移改为 \code{map}，空间降为 $O(T)$、时间变为 $O(T \log |\Sigma|)$。
+
+\begin{quote}
+\textbf{注意：}
+\begin{itemize}
+  \item 网上流传的「每插一个串就把 last 置 0 再跑原版 extend」是\textbf{错误写法}：原版 extend 不检查转移是否已存在，会产生多余的「影子状态」，使出现次数统计出错。
+  \item 情况 B 返回 $q$、情况 C 返回 clone，返回错了整棵自动机的 len 关系就乱了。
+  \item 初始状态必须 $\text{link}[0] = -1$，否则跳 link 的循环停在根上会产生自环。
+  \item 出现次数用 Trie 节点权重累加，而不是给每个新状态赋 1；若只统计本质不同子串数，则与权重无关，可跳过赋权。
+\end{itemize}
+\end{quote}
+
+\textbf{例题：} P6139 【模板】广义后缀自动机——给定 $n$ 个字符串，输出所有串本质不同的子串个数与广义 SAM 的状态数。
+
+\lstinputlisting[language=C++]{codes/03-strings-07.cpp}

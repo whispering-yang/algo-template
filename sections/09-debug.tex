@@ -1,0 +1,66 @@
+\section{本地调试}
+
+\subsection{Linux 系统取消栈空间限制}
+
+\lstinputlisting[language=bash]{codes/09-debug-01.sh}
+
+\subsection{GDB 命令行调试 (Command-Line GDB Debugging)}
+
+\textbf{用途：} GDB (GNU Debugger) 是 Linux 下强大的命令行调试工具，用于定位段错误、除零异常、逻辑错误等问题。结合 \code{-g} 编译选项可查看源码级信息。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{断点 (Breakpoint)}：在指定位置暂停程序执行。
+  \item \textbf{单步执行 (Step/Next)}：逐行跟踪程序，观察变量变化。
+  \item \textbf{调用栈 (Backtrace)}：查看函数调用链，定位崩溃现场。
+  \item \textbf{条件断点}：满足特定条件时才触发暂停，避免频繁中断。
+  \item \textbf{Core Dump}：程序崩溃时保存的内存快照，用于事后分析。
+\end{itemize}
+
+\textbf{编译要求：} 使用 \code{-g} 选项生成调试信息，建议关闭优化以保持源码对应关系。
+\begin{quote}
+  \code{g++ -std=c++17 -g -Wall -O0 -o program source.cpp}
+\end{quote}
+
+\textbf{常用 GDB 命令速查：}
+
+\begin{tabularx}{\textwidth}{c|X}
+  \hline
+  \textbf{命令} & \textbf{说明} \\
+  \hline
+  \code{b main} / \code{break 10} & 在函数或行号处设断点 \\
+  \code{r} / \code{run} & 运行程序（可带命令行参数） \\
+  \code{s} / \code{step} & 步入函数内部 \\
+  \code{n} / \code{next} & 步过，不进入函数 \\
+  \code{c} / \code{continue} & 继续执行到下一断点 \\
+  \code{p var} / \code{print var} & 打印变量值 \\
+  \code{display var} & 每次暂停自动显示变量 \\
+  \code{bt} / \code{backtrace} & 查看调用栈 \\
+  \code{f 2} / \code{frame 2} & 切换到指定栈帧 \\
+  \code{info locals} & 查看所有局部变量 \\
+  \code{info breakpoints} & 查看所有断点 \\
+  \code{delete 1} & 删除指定编号的断点 \\
+  \code{set var x = 42} & 运行时修改变量值 \\
+  \code{list} & 查看当前行附近源代码 \\
+  \code{q} / \code{quit} & 退出 GDB \\
+  \hline
+\end{tabularx}
+
+\textbf{调试流程：}
+\begin{enumerate}
+  \item \textbf{编译：} \code{g++ -g -Wall -O0 -o debug 09-debug-02.cpp}
+  \item \textbf{启动：} \code{gdb ./debug}
+  \item \textbf{设断点：} \code{(gdb) b main} 或 \code{(gdb) b 行号}
+  \item \textbf{运行：} \code{(gdb) r}
+  \item \textbf{单步跟踪：} 交替使用 \code{s}（步入）和 \code{n}（步过）
+  \item \textbf{查看变量：} \code{(gdb) p 变量名}
+  \item \textbf{定位崩溃：} 程序崩溃后输入 \code{bt} 查看调用栈，\code{f 0} 进入最内层，\code{info locals} 查看局部变量
+\end{enumerate}
+
+\textbf{示例程序（含常见错误）：}
+
+\lstinputlisting[language=C++]{codes/09-debug-02.cpp}
+
+\textbf{GDB 命令参考（含完整调试流程）：}
+
+\lstinputlisting[language=bash]{codes/09-debug-02.gdb}

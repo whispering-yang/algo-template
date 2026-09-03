@@ -1,0 +1,323 @@
+\section{图论}
+
+\subsection{最近公共祖先 Lowest Common Ancestor}
+
+\subsubsection{dfn 方法求解 LCA}
+
+\textbf{核心原理：} 给定一棵树，使用 \textbf{DFS}（深度优先搜索）求出每个节点的 $dfn$ 序号。
+
+欲求解 $\operatorname{LCA}(u, v)$ 有如下结论（假设 $u$ 的 $dfn$ 序号比 $v$ 小）：
+
+\begin{itemize}
+  \item 父节点的 $dfn$ 序号一定比子节点小。
+  \item 在 $u$ 和 $v$ 的 $dfn$ 序号之间的、深度最小的节点，是 $u$ 和 $v$ 的最近公共祖先的其中一个子儿子。
+  \item 为不特判 $v$ 在 $u$ 子树上的情况，将 $u$ 的 $dfn$ 序号加 $1$。即判断 $dfn(u+1)$ 和 $dfn(v)$ 之间深度最小的节点，结果仍和第二种情况一样，是 $u$ 和 $v$ 的最近公共祖先的其中一个子儿子。
+\end{itemize}
+
+\textbf{如何编写代码：}
+
+基于父节点 $dfn$ 序号一定比子节点小的结论，可以推断出 $u$ 和 $v$ 的最近公共祖先的 $dfn$ 序号一定比 $u$ 和 $v$ 的序号小。因此，可以初始化 ST 表的第一层，以 $dfn$ 序号为下标，每个元素值为对应节点的父节点编号；更新 ST 表的每一层时，比较前一层两个节点的 $dfn$ 值大小，将后一层的值更新为前一层两个节点中 $dfn$ 值较小的节点编号。这样，使用一次 ST 表的区间查询得到的结果就是 $\operatorname{LCA}$ 的答案。
+
+\lstinputlisting[language=C++]{codes/05-graph-01.cpp}
+
+\subsubsection{树上倍增法求 LCA}
+
+\textbf{用途：} 预处理 $O(n \log n)$，单次查询 $O(\log n)$，可在求 LCA 的同时维护节点深度。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item 设 $pa[k][u]$ 表示节点 $u$ 向上走 $2^k$ 步到达的祖先节点（超出根则为 $0$）。
+  \item 预处理时，先有 $pa[0][u] = \text{parent}(u)$，然后递推 $pa[k][u] = pa[k-1][\,pa[k-1][u]\,]$。
+  \item 查询 $\operatorname{LCA}(u, v)$ 时：
+    \begin{enumerate}
+      \item 先将较深的节点向上跳到与另一节点同一深度。
+      \item 若此时 $u = v$，直接返回。
+      \item 从大到小枚举 $k$，若 $pa[k][u] \neq pa[k][v]$，则同时上跳 $2^k$ 步。
+      \item 最后 $pa[0][u]$（或 $pa[0][v]$）即为 LCA。
+    \end{enumerate}
+\end{itemize}
+
+\textbf{时间复杂度：} 预处理 $O(n \log n)$，单次查询 $O(\log n)$。
+
+\lstinputlisting[language=C++]{codes/05-graph-06.cpp}
+
+\subsection{Dijkstra 算法（单源最短路）}
+
+\textbf{用途：} 求解\textbf{非负权图}中的单源最短路（Single-Source Shortest Path, SSSP），即从起点 $s$ 到其余所有点的最短距离。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item 维护距离数组 $\operatorname{dist}$，表示起点 $s$ 到各点的当前最短距离。
+  \item 每次从「尚未确定最短路」的点中选出 $\operatorname{dist}$ 最小的点 $u$，将其标记为已确定，并用它松弛所有出边 $(u, v, w)$。
+  \item 由于边权非负，$u$ 一旦被选出，其 $\operatorname{dist}$ 值即为最终最短路（贪心策略的正确性保证）。
+\end{itemize}
+
+\textbf{算法流程：}
+
+\begin{enumerate}
+  \item 初始化 $\operatorname{dist}[s] = 0$，其余为 $+\infty$，将 $(0, s)$ 入堆。
+  \item 取出堆顶 $(d, u)$；若 $d \neq \operatorname{dist}[u]$，说明是过期状态，直接跳过（惰性删除）。
+  \item 遍历 $u$ 的出边 $(u, v, w)$，若 $\operatorname{dist}[v] > \operatorname{dist}[u] + w$，更新 $\operatorname{dist}[v]$ 并将 $(\operatorname{dist}[v], v)$ 入堆。
+  \item 重复步骤 2--3，直至堆空。
+\end{enumerate}
+
+\textbf{时间复杂度：} 二叉堆优化后为 $O((n + m) \log n)$。
+
+\begin{quote}
+\textbf{注意：} Dijkstra 仅适用于边权非负的图。图中含负权边时必须改用 Bellman-Ford 或 SPFA。
+\end{quote}
+
+\lstinputlisting[language=C++]{codes/05-graph-10.cpp}
+
+\subsection{Floyd-Warshall 算法（全源最短路）}
+
+\textbf{用途：} 求解任意两点间的最短路（All-Pairs Shortest Path, APSP），支持负权边（不含负环）。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item 动态规划思想：设 $d[i][j]$ 表示当前只允许经过编号前 $k$ 个节点作为中转点时，$i$ 到 $j$ 的最短距离。
+  \item 转移方程：$d[i][j] = \min(d[i][j],\ d[i][k] + d[k][j])$，即「经过 $k$ 中转」与「不经过 $k$ 中转」取较小者。
+  \item 外层循环枚举中转点 $k$，内层两重循环枚举 $i, j$，共 $O(n^3)$ 次转移。
+\end{itemize}
+
+\textbf{时间复杂度：} $O(n^3)$，空间复杂度 $O(n^2)$，适合 $n \le 500$ 左右的稠密图。
+
+\lstinputlisting[language=C++]{codes/05-graph-11.cpp}
+
+\subsection{强连通分量 Tarjan}
+
+\subsubsection{基本概念}
+
+\begin{itemize}
+  \item \textbf{强连通图}：有向图中，任意两个顶点 $u, v$ 均存在 $u \to v$ 和 $v \to u$ 的路径。
+  \item \textbf{强连通分量 (Strongly Connected Component, SCC)}：有向图的极大强连通子图。
+  \item \textbf{应用}：缩点、2-SAT 判定、有向图环检测等。
+\end{itemize}
+
+\subsubsection{运行流程}
+
+Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
+
+\begin{enumerate}
+  \item 初次来到u时，\code{dfn[u] = low[u] =} 分配的dfn序号，然后节点u进栈
+  \item 遍历u的每个儿子v，讨论u和v之间的边是什么类型，如果是弃边，什么也不做
+  \item 如果是树边，先递归计算\code{low[v]}，然后\code{low[u] = min(low[u], low[v])}
+  \item 如果是回边，直接\code{low[u] = min(low[u], dfn[v])}
+  \item 遍历结束后，判断\code{dfn[u]}是否等于\code{low[u]}，如果不等，代表节点u不能扎起口袋
+  \item 如果相等，代表节点u能扎起口袋，栈弹出节点，直到u出现时停止，这批节点属于一个强连通分量
+  \item 考察图中每个节点，一旦发现\code{dfn[i] == 0}，就从i节点开始，执行一遍Tarjan算法
+  \item 最终得到图中全部强连通分量，时间复杂度O(n + m)，n为节点数，m为边数
+\end{enumerate}
+
+\subsubsection{复杂度与代码实现}
+
+\begin{itemize}
+  \item \textbf{时间复杂度}：$O(n + m)$，每个节点和边各访问一次。
+  \item \textbf{空间复杂度}：$O(n + m)$，需存储图、$\operatorname{dfn}$、$\operatorname{low}$、栈及标记数组。
+\end{itemize}
+
+\subsubsection{特殊说明}
+
+在 Tarjan 算法中，强连通分量的编号顺序（scc\_cnt 递增的顺序）与缩点后 DAG 的拓扑序相反，即 按编号递增的顺序遍历 SCC 得到的是逆拓扑序。
+
+\subsubsection{代码模板}
+
+\lstinputlisting[language=C++]{codes/05-graph-02.cpp}
+
+\subsection{2-SAT (2-Satisfiability)}
+
+\subsubsection{用途}
+
+\textbf{2-SAT} 用于判定：给定 $n$ 个布尔变量，以及若干\textbf{恰好涉及两个变量}的子句（形如 $x_i \lor x_j$、$x_i \lor \lnot x_j$、$\lnot x_i \lor \lnot x_j$），是否存在一组使所有子句均成立的变量赋值。
+
+\subsubsection{核心概念}
+
+\begin{itemize}
+  \item \textbf{变元 (Literal)}：$x_i = \text{true}$ 或 $x_i = \text{false}$，共 $2n$ 个。
+  \item \textbf{子句 (Clause)}：形如 $(x_i = a) \lor (x_j = b)$，其中 $a, b \in \{0, 1\}$。
+  \item \textbf{蕴含图 (Implication Graph)}：每个子句可拆为两条蕴含边：
+    \begin{itemize}
+      \item 若 $x_i \neq a$，则必须 $x_j = b$  —— 即 $\lnot(x_i = a) \to (x_j = b)$。
+      \item 若 $x_j \neq b$，则必须 $x_i = a$  —— 即 $\lnot(x_j = b) \to (x_i = a)$。
+    \end{itemize}
+  \item 图中共 $2n$ 个节点：节点 $i$ 表示 $x_i = \text{true}$，节点 $i + n$ 表示 $x_i = \text{false}$。
+\end{itemize}
+
+\subsubsection{算法流程}
+
+\begin{enumerate}
+  \item \textbf{建图}：将每个子句转化为两条有向边，构建蕴含图。
+  \item \textbf{Tarjan SCC}：在蕴含图上运行 Tarjan 算法，求出所有强连通分量。
+  \item \textbf{可满足性判定}：若存在 $i$ 使得 $x_i = \text{true}$ 和 $x_i = \text{false}$ 属于同一 SCC，则不可满足；否则存在可行解。
+  \item \textbf{构造赋值}：利用 SCC 编号的逆拓扑序性质，对每个变量 $x_i$：若 $\operatorname{scc}[i] < \operatorname{scc}[i + n]$ 则 $x_i = \text{true}$，否则 $x_i = \text{false}$。
+\end{enumerate}
+
+\begin{quote}
+\textbf{注意：} Tarjan 求出的 SCC 编号（\code{scc\_cnt} 递增顺序）与缩点后 DAG 的拓扑序相反。因此 $\operatorname{scc}[i] < \operatorname{scc}[i + n]$ 意味着「$x_i = \text{true}$」比「$x_i = \text{false}$」在拓扑序中更靠后，按蕴含方向应取靠后的赋值，即 $x_i = \text{true}$。
+\end{quote}
+
+\subsubsection{时间复杂度}
+
+\begin{itemize}
+  \item \textbf{时间复杂度}：$O(n + m)$，其中 $n$ 为变量数，$m$ 为子句数（边数为 $2m$）。
+  \item \textbf{空间复杂度}：$O(n + m)$，用于存储图、$\operatorname{dfn}$、$\operatorname{low}$、$\operatorname{scc}$ 及栈。
+\end{itemize}
+
+\subsubsection{代码模板}
+
+约定：变量编号 $1 \sim n$；\code{add\_clause(x, a, y, b)} 表示添加子句 $(x = a) \lor (y = b)$，其中 $a, b \in \{0, 1\}$。
+
+\lstinputlisting[language=C++]{codes/05-graph-09.cpp}
+
+\subsection{割点与桥}
+
+\subsubsection{割点（Articulation Point / Cut Vertex）}
+
+\begin{itemize}
+  \item \textbf{定义}：在无向连通图中，删除某个顶点及其关联的边后，图的连通分量数增加，则该顶点称为割点。
+  \item \textbf{Tarjan 判定条件}（基于 DFS 树）：
+    \begin{enumerate}
+      \item \textbf{根节点}：若根节点在 DFS 树中有至少 $2$ 个子树，则根为割点。
+      \item \textbf{非根节点 $u$}：若存在一个子节点 $v$，使得 $\operatorname{low}[v] \ge \operatorname{dfn}[u]$，则 $u$ 为割点。
+        \begin{itemize}
+          \item 含义：$v$ 及其子树无法通过非树边（回边）到达 $u$ 的祖先，因此删除 $u$ 会将 $v$ 的子树与上层断开。
+        \end{itemize}
+    \end{enumerate}
+  \item \textbf{注意}：$\operatorname{low}[v] \ge \operatorname{dfn}[u]$ 意味着即使经过回边，$v$ 能到达的最早祖先不早于 $u$，所以 $u$ 是必经之路。
+\end{itemize}
+
+\subsubsection{桥（Bridge / Cut Edge）}
+
+\begin{itemize}
+  \item \textbf{定义}：在无向连通图中，删除某条边后，图的连通分量数增加，则该边称为桥。
+  \item \textbf{Tarjan 判定条件}：
+    \begin{itemize}
+      \item 对于树边 $(u, v)$ 且 $\operatorname{parent}[v] = u$，若 $\operatorname{low}[v] > \operatorname{dfn}[u]$，则边 $(u, v)$ 是桥。
+      \item 含义：$v$ 及其子树无法通过任何回边到达 $u$ 或 $u$ 的祖先，因此删除这条边会让 $v$ 的子树与上面分离。
+    \end{itemize}
+  \item \textbf{注意}：条件是 \textbf{严格大于}（$\operatorname{low}[v] > \operatorname{dfn}[u]$），而割点是 $\operatorname{low}[v] \ge \operatorname{dfn}[u]$。
+\end{itemize}
+
+\subsubsection{与强连通分量 Tarjan 的区别}
+
+\begin{tabularx}{\textwidth}{|c|X|X|}
+  \hline
+  & \textbf{强连通分量 (有向图)} & \textbf{割点与桥 (无向图)} \\
+  \hline
+  \textbf{更新 low} &
+  $\operatorname{low}[u] = \min(\operatorname{low}[u], \operatorname{dfn}[v])$ 当 $v$ 已访问且在栈中 &
+  $\operatorname{low}[u] = \min(\operatorname{low}[u], \operatorname{dfn}[v])$ 只要 $v$ 不是父节点 \\
+  \hline
+  \textbf{判定条件} &
+  $\operatorname{low}[u] = \operatorname{dfn}[u]$ 时弹栈 &
+  根据子节点 $\operatorname{low}$ 与 $\operatorname{dfn}[u]$ 比较 \\
+  \hline
+  \textbf{处理回边} &
+  仅考虑栈内节点 &
+  所有访问过的非父节点（无向边） \\
+  \hline
+\end{tabularx}
+
+\subsubsection{复杂度}
+
+\begin{itemize}
+  \item \textbf{时间复杂度}：$O(n + m)$，与 DFS 相同。
+  \item \textbf{空间复杂度}：$O(n + m)$。
+\end{itemize}
+
+\subsubsection{代码模板}
+
+\lstinputlisting[language=C++]{codes/05-graph-03.cpp}
+
+\subsection{点双连通分量 (Biconnected Component, BCC)}
+
+\subsubsection{基本概念}
+
+\begin{itemize}
+  \item \textbf{定义}：在无向图中，若删除某个顶点后图仍然连通，则该点属于同一个点双连通分量；点双连通分量是极大点双连通子图。
+  \item \textbf{应用}：求割点、割点树、桥连通结构、图的可靠性分析。
+  \item \textbf{特征}：点双连通分量内部不存在割点，且任意两个点之间至少有两条内部点不重复的路径。
+\end{itemize}
+
+\subsubsection{Tarjan 判定条件}
+
+\begin{itemize}
+  \item \textbf{割点判定}：对于非根节点 $u$，若存在子节点 $v$ 满足 $\operatorname{low}[v] \ge \operatorname{dfn}[u]$，则 $u$ 是割点。
+  \item \textbf{点双分量构造}：当递归返回时，若 $\operatorname{low}[v] \ge \operatorname{dfn}[u]$，就从栈中弹出一段节点，直到 $v$ 被弹出，形成一个点双连通分量，并把 $u$ 也加入该分量。
+  \item \textbf{单节点特判}：如果一个点没有任何边（或在 DFS 过程中没有子树），则它本身构成一个大小为 $1$ 的点双连通分量；这类情况要在递归结束后单独处理，避免漏掉孤立点。
+\end{itemize}
+
+\subsubsection{代码模板}
+
+\lstinputlisting[language=C++]{codes/05-graph-04.cpp}
+
+\subsection{边双连通分量 (Bridge-connected Component, E-BCC)}
+
+\subsubsection{基本概念}
+
+\begin{itemize}
+  \item \textbf{定义}：在无向图中，若删除任意一条边后图仍然连通，则该边属于同一个边双连通分量；边双连通分量也称为 2-edge-connected component。
+  \item \textbf{应用}：求桥、桥树、无向图中不受单条边影响的连通结构。
+  \item \textbf{特征}：边双连通分量内部不存在桥，且任意两个点之间至少有两条边不重的路径。
+\end{itemize}
+
+\subsubsection{Tarjan 判定条件}
+
+\begin{itemize}
+  \item \textbf{桥判定}：对于树边 $(u, v)$，若 $\operatorname{low}[v] > \operatorname{dfn}[u]$，则 $(u, v)$ 是桥。
+  \item \textbf{边双分量构造}：当 DFS 回到 $u$ 时，若某个子树无法回到 $u$ 的祖先，则把该子树对应的栈中节点弹出，形成一个边双连通分量。
+  \item \textbf{重边特判}：在无向图中，若出现重边，需特别注意父边的重复处理，否则会误判成桥或错误地拆分分量。常见做法是对每个点记录一条父边的访问状态，避免把同一条边重复计算两次。
+\end{itemize}
+
+\subsubsection{代码模板}
+
+\lstinputlisting[language=C++]{codes/05-graph-05.cpp}
+
+\subsection{拓扑排序方案数 (Counting Linear Extensions)}
+
+已知一个长度为 $n$ 的序列（或 $n$ 个元素），并且给定了若干形如 $a_i < a_j$ 的大小关系，要求计算满足所有这些约束的排列总数。这在组合数学中称为\textbf{偏序集的线性扩展计数}，在算法竞赛中常称为\textbf{拓扑排序方案数}。
+
+将元素视为节点，$a_i < a_j$ 视为一条有向边 $a_i \to a_j$，则问题等价于求该有向无环图（DAG）的拓扑排序总数。
+
+一般情形为 \#P-complete 问题，仅对规模较小或结构特殊的偏序可高效求解。
+
+\subsubsection{状压 DP（$n \le 20$ 通用解法）}
+
+\textbf{核心思想：}
+
+设 $\mathit{dp}[\text{mask}]$ 表示当前已选元素集合为 \text{mask} 时的方案数。转移时，枚举下一个可以放入序列的元素 $i$，其充要条件是：
+
+\begin{itemize}
+  \item $i$ 不在 \text{mask} 中。
+  \item $i$ 的所有前驱均已包含在 \text{mask} 中。
+\end{itemize}
+
+\textbf{转移方程：}
+
+\[
+\mathit{dp}[0] = 1,\qquad
+\mathit{dp}[\text{mask} \cup \{i\}] \mathrel{+}= \mathit{dp}[\text{mask}]
+\]
+
+\textbf{时间复杂度：} $O(n \cdot 2^n)$，$n \le 20$ 时可行。
+
+\lstinputlisting[language=C++]{codes/05-graph-07.cpp}
+
+\subsubsection{树形偏序计数}
+
+\textbf{适用条件：} 偏序关系的哈斯图形成一棵外向树（祖先必须排在子孙前），每个非根节点有且仅有一个直接前驱。
+
+\textbf{公式：} 设 $sz[u]$ 为以 $u$ 为根的子树大小（代码中为 \texttt{subtree\_size[u]}），则
+
+\[
+\text{ans} = \frac{n!}{\displaystyle\prod_{u=1}^{n} sz[u]}
+\]
+
+\textbf{推导思路：} 通过子树归并的多重集排列推导而来。对于节点 $u$，将各子树的节点交错合并，保持子树内部顺序不变，逐层递归后得到上述封闭形式。
+
+\textbf{时间复杂度：} 一次 DFS 求 $sz[u]$，$O(n)$，可处理 $n$ 达 $10^5$ 以上的规模。
+
+\lstinputlisting[language=C++]{codes/05-graph-08.cpp}

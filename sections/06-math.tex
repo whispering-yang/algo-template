@@ -1,0 +1,568 @@
+\section{数学}
+
+\subsection{多项式卷积 (Polynomial Convolution)}
+
+\subsubsection{快速傅里叶变换 (FFT)}
+
+\textbf{用途：}  
+在 $O(n\log n)$ 时间内计算两个多项式的乘积。给定两个多项式 $A(x)=\sum_{i=0}^{n-1}a_ix^i$ 和 $B(x)=\sum_{i=0}^{m-1}b_ix^i$，FFT 可以高效求出它们的卷积 $C(x)=A(x)\cdot B(x)$ 的系数。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{点值表示：} 一个 $n$ 次多项式由它在 $n$ 个不同点处的取值唯一确定。
+    \item \textbf{单位根：} 选择 $\omega_n^k = e^{2\pi i k/n}$ 作为求值点，利用其周期性和对称性进行分治。
+    \item \textbf{蝴蝶变换：} 在迭代实现中，将下标按二进制位逆序重排，使得可以直接从底层向上合并，避免递归。
+    \item \textbf{逆变换：} 只需对点值再做一次 FFT，并将结果除以 $n$（或者将单位根替换为共轭后对结果取共轭并除以 $n$）。
+\end{itemize}
+
+\textbf{算法流程（迭代版）：}
+\begin{enumerate}
+    \item 将多项式 $A,B$ 补全至长度 $N=2^k$，且 $N$ 不小于乘积的次数。
+    \item 进行蝴蝶重排，将序列按二进制逆序重新排列。
+    \item 枚举合并步长 $\text{len}=2,4,\dots,N$，对应单位根 $\omega_{\text{len}}=e^{\pm 2\pi i/\text{len}}$，合并相邻的两段。
+    \item 完成正向 FFT 后得到点值，对应点值相乘，再执行一次逆 FFT 得到卷积结果（注意除以 $N$ 或缩放）。
+\end{enumerate}
+
+\textbf{时间复杂度：} 蝴蝶重排 $O(N)$，逐层合并共 $\log N$ 层，每层 $O(N)$，总复杂度 $O(N\log N)$。空间复杂度 $O(N)$。
+
+\lstinputlisting[language=C++]{codes/06-math-01.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 代码中使用了 \texttt{std::complex<double>}，实际应用中若需避免浮点误差，可改用整数意义下的 NTT（数论变换）。
+    \item 最终系数存储在 \texttt{double} 向量中，对于整数多项式可进行四舍五入。
+\end{itemize}
+
+\subsubsection{快速数论变换 (NTT)}
+
+\textbf{用途：}  
+在 $O(n\log n)$ 时间内计算两个\textbf{整数系数}多项式在模意义下的乘积，避免浮点误差。  
+给定多项式 $A(x),B(x)$ 和一个 NTT-friendly 的质数模数 $P$（如 $998244353$，其原根为 $3$），NTT 能精确计算 $C(x)=A(x)\cdot B(x) \bmod P$。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item 类比 FFT 中的复单位根 $\omega_n$，在模 $P$ 下使用\textbf{原根} $g$ 构造\textbf{主单位根} $\omega_n = g^{(P-1)/n}$，满足完全相同的代数性质。
+    \item 需要 $n \mid (P-1)$，即 $P$ 形如 $k\cdot 2^m+1$，保证变换长度 $n$ 为 $2$ 的幂次。常用 $P=998244353=119\times 2^{23}+1$，原根 $g=3$。
+    \item 蝴蝶变换与 FFT 一致，逆变换时使用单位根的逆元并在最后乘 $n^{-1}\bmod P$。
+\end{itemize}
+
+\textbf{原根与单位根的对应关系：}
+
+NTT 能够在模 $P$ 下完美复现 FFT 的所有性质，根本原因在于\textbf{原根} $g$ 的阶为 $P-1$，令 $\omega_n = g^{(P-1)/n}$，则 $\omega_n$ 恰为模 $P$ 下的 $n$ 次\textbf{主单位根}，其代数性质与复数域中的 $\omega_n = e^{2\pi i/n}$ 一一对应。
+
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{性质} & \textbf{复数域 (FFT)} & \textbf{模域 (NTT)} \\ \hline
+主单位根定义 & $\omega_n = e^{2\pi i/n}$ & $\omega_n = g^{(P-1)/n} \pmod{P}$ \\
+\hline
+$\omega_n^n = 1$ & $e^{2\pi i}=1$ & $\left(g^{(P-1)/n}\right)^n = g^{P-1} = 1$ \\
+   & 旋转一周回到原处 & 费马小定理 $g^{P-1}\equiv 1$ \\
+\hline
+$\omega_n^{n/2} = -1$ & $e^{\pi i} = -1$ & $g^{(P-1)/2} \equiv -1$ \\
+   & 半周翻转 & 二次剩余意义下的 $-1$ \\
+\hline
+周期性 & $\omega_n^k = \omega_n^{(k \bmod n)}$ & $\omega_n^k = \omega_n^{(k \bmod n)}$ \\
+   & 以 $n$ 为周期的旋转 & 指数模 $n$ 周期 \\
+\hline
+折半性 & $\omega_{2n}^{2k} = \omega_n^k$ & $\omega_{2n}^{2k} = g^{\frac{P-1}{2n}\cdot 2k} = g^{\frac{P-1}{n}\cdot k} = \omega_n^k$ \\
+   & 加倍长度后偶次项不变 & 指数约分后等价 \\
+\hline
+\end{tabular}
+
+\vspace{0.3cm}
+
+\textbf{算法流程（迭代版）：}
+\begin{enumerate}
+    \item 将多项式补全至长度 $N=2^k$，满足 $N$ 不小于乘积的次数，且 $N \mid (P-1)$。
+    \item 蝴蝶重排（二进制逆序）。
+    \item 枚举步长，计算当前层的单位根 $w_{\text{len}}=g^{(P-1)/\text{len}}$，合并相邻块。
+    \item 正变换得到点值，逐点相乘，逆变换后各乘 $N^{-1}\bmod P$ 得到最终系数。
+\end{enumerate}
+
+\textbf{时间复杂度：} 与 FFT 相同，为 $O(N\log N)$，全部使用整数运算，没有浮点误差。
+
+\lstinputlisting[language=C++]{codes/06-math-02.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 代码固定模数 $998244353$ 和原根 $3$，这是算法竞赛中最常用的 NTT 模数。
+    \item 若需要其他模数，需保证 $P-1$ 含有足够大的 $2$ 的幂次，并找到对应的原根。
+    \item 逆变换时单位根取逆，最后乘 $n^{-1}$ 即可得到卷积系数。
+\end{itemize}
+
+\subsubsection{无位逆序 NTT (Bit-reversal-free NTT)}
+
+\textbf{用途：}  
+与上一节的标准 NTT 相同，在 $O(N\log N)$ 时间内计算模意义下的多项式卷积，但整个流程\textbf{不执行任何位逆序置换 (bit-reversal permutation)}：省去 $O(N)$ 的跨步交换、\code{rev} 数组与缓存不友好的随机访存，代码更短，实际常数更优。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item 迭代 FFT/NTT 的蝴蝶操作有两种方向，\textbf{都不需要预先重排}。\textbf{按频率抽取 (DIF, Decimation-In-Frequency)}：输入自然序，输出自动变为位逆序；\textbf{按时间抽取 (DIT, Decimation-In-Time)}：输入位逆序，输出自动恢复自然序。
+    \item DIF 与 DIT 互为转置，蝴蝶形状不同：DIF \textbf{先加减、后乘旋转因子}，得到 $(u+v,\ (u-v)\,\omega^{k})$，层长从大到小枚举；DIT \textbf{先乘旋转因子、后加减}，得到 $(u+v\omega^{k},\ u-v\omega^{k})$，层长从小到大枚举。
+    \item 卷积的逐点相乘与下标顺序无关：记 $R$ 为位逆序置换矩阵，$F$ 为 DFT 矩阵，则 DIF 实现的是 $R\cdot F$；而置换是逐下标作用，$(Rx)\odot(Ry)=R(x\odot y)$，位逆序的点值逐点相乘后\textbf{仍是位逆序}。
+    \item 逆 DIT 恰好实现 $F^{-1}\cdot R$（输入位逆序、输出自然序）。于是「DIF 正变换 $\to$ 逐点相乘 $\to$ DIT 逆变换」完美衔接：\[F^{-1}R\big((RFA)\odot(RFB)\big)=F^{-1}\big((FA)\odot(FB)\big)=A\cdot B,\] 位逆序状态只存在于中间，任何显式置换都不需要。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+    \item 将 $A,B$ 补零至长度 $N=2^k$（$N\ge n+m-1$，且 $N\mid P-1$）。
+    \item 对 $A,B$ 分别执行 DIF：枚举块长 $\text{len}=N,N/2,\dots,2$，层单位根 $\omega_{\text{len}}=g^{(P-1)/\text{len}}$，块内前半放 $u+v$，后半放 $(u-v)\,\omega_{\text{len}}^{k}$，得到位逆序的点值。
+    \item 逐点相乘 $C_i=A_iB_i\bmod P$（两序列下标顺序一致，直接对应相乘即可）。
+    \item 对 $C$ 执行逆 DIT：枚举块长 $\text{len}=2,4,\dots,N$，旋转因子取逆元 $\omega_{\text{len}}^{-k}$，块内放 $u\pm v\,\omega_{\text{len}}^{-k}$，最后整体乘 $N^{-1}\bmod P$，即得自然序的卷积系数。
+\end{enumerate}
+
+\textbf{时间复杂度：} 仍为 $O(N\log N)$；相比标准实现省去位逆序置换的 $O(N)$ 次跨步交换与 \code{rev} 数组开销，实际运行常数更小。
+
+\lstinputlisting[language=C++]{codes/06-math-16.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 正逆变换必须「DIF 配 DIT」成对使用：两次都用 DIF 或两次都用 DIT 都得不到正确的卷积。
+    \item DIF 的输出与逆 DIT 的输入均为位逆序；若后续算法需要\textbf{自然序点值}（如多项式多点求值、跨操作保留点值复用），仍需显式做一次位逆序置换。
+    \item 两者唯一的实现区别是：旋转因子乘在减法\textbf{之后}（DIF）或\textbf{之前}（DIT），以及层长枚举方向相反（$N\to2$ 对 $2\to N$）。
+    \item 适用前提是变换全程「正逆成对」出现：多项式乘法及基于卷积的模板（求逆 / 开方 / \code{ln} / \code{exp}）中的每次正变换都有对应逆变换且中间无需自然序点值时，可用本模板替换之前的 \code{ntt} 实现。
+\end{itemize}
+
+\subsubsection{卷积与相关 (Convolution and Correlation)}
+
+\textbf{用途：}  
+FFT/NTT 不仅能计算多项式乘法，也能直接套用于\textbf{序列}的卷积 (Convolution) 与相关 (Correlation) 运算，在字符串匹配、模式匹配、计数问题等题目中经常出现。本节统一以模 $998244353$ 的 NTT 模板给出普通卷积、循环卷积、普通互（自）相关、循环互（自）相关四种运算的定义、实现与注意事项。
+
+\begin{itemize}
+    \item \textbf{普通卷积 (Linear Convolution)：} $c_k=\sum_{i+j=k}a_ib_j$（越界下标视为 $0$），等价于多项式乘法。实现时必须将 $a,b$ 补零至长度 $N\ge n+m-1$（$N$ 取最小 $2$ 的幂）再变换；否则长度不足时，超出部分会\textbf{回绕 (wrap-around)} 混叠到结果头部，得到的是循环卷积而非普通卷积。
+    \item \textbf{循环卷积 (Circular Convolution)：} $c_k=\sum_{i+j\equiv k\pmod N}a_ib_j$，即长度为 $N$ 的周期卷积。当 $N\ge n+m-1$ 时与普通卷积完全一致。实现方式二选一：其一，$N$ 为 $2$ 的幂且 $N\mid(P-1)$ 时，直接做长度 $N$ 的 NTT 后点值相乘、逆变换即得；其二，任意 $N$ 时，先算普通卷积，再把结果按 $k\bmod N$ 折叠回绕相加。
+    \item \textbf{普通互（自）相关 (Linear Cross-Correlation)：} $r_k=\sum_i a_ib_{i+k}$，$k\in[-(m-1),n-1]$，衡量两序列的相似程度。核心恒等式 $r_k=(a\ast\tilde b)[m-1-k]$，其中 $\tilde b_j=b_{m-1-j}$ 为翻转后的 $b$，即\textbf{翻转 $b$ 后做普通卷积、再镜像回原顺序}。取 $b=a$ 即自相关：$r_{-k}=r_k$（偶对称），$r_0=\sum_i a_i^2$ 为序列\textbf{能量}。
+    \item \textbf{循环互（自）相关 (Circular Cross-Correlation)：} $r_k=\sum_i a_ib_{(i+k)\bmod N}$，$k\in[0,N-1]$。实现：翻转 $b$ 后做长度为 $N$ 的循环卷积得 $c$，再由 $r_k=c_{(m-1-k)\bmod N}$ 镜像。取 $b=a$ 得循环自相关，满足 $r_k=r_{(N-k)\bmod N}$，可用于检测序列周期性。
+\end{itemize}
+
+\textbf{注意事项：}
+\begin{itemize}
+    \item \textbf{补零长度：} 普通卷积要求 $N\ge n+m-1$，否则回绕混叠；$N$ 取不小于 $n+m-1$ 的最小 $2$ 的幂。
+    \item \textbf{NTT 长度限制：} 模 $998244353$ 要求 $N\mid P-1$，即 $N\le 2^{23}$；数据规模更大时需多模 NTT + CRT 或改用 FFT。
+    \item \textbf{精度与模数：} FFT 为浮点运算，整数结果需四舍五入取整；NTT 全程整数无误差，但结果为 $\bmod P$ 意义下，真实值可能超过 $P$ 时需多模 NTT。
+    \item \textbf{下标偏移：} 相关结果的下标与卷积不同：\code{cross\_correlation} 返回 $res[k+(m-1)]=r_k$，零移位对应 $res[m-1]$，取答案时勿混淆。
+    \item \textbf{共轭与翻转：} 频域相关定理 $R=\overline{\operatorname{DFT}(A)}\cdot\operatorname{DFT}(B)$ 仅适用于复数 FFT；NTT 模域没有共轭运算，一律用「翻转 $b$ 后卷积」实现，两者在代数上等价。
+\end{itemize}
+
+\lstinputlisting[language=C++]{codes/06-math-09.cpp}
+
+\subsection{生成函数 (Generating Functions)}
+
+\subsubsection{普通生成函数与指数生成函数 (OGF and EGF)}
+
+\textbf{用途：}  
+生成函数 (母函数) 将无穷数列 $\{a_n\}_{n\ge 0}$ 编码为形式幂级数，把计数与递推问题转化为幂级数之间的代数运算，再配合本节后面的多项式模板（求逆 / 开方 / \code{ln} / \code{exp}）在 $O(n\log n)$ 时间内求出数列的通项或前 $n$ 项。
+
+\textbf{核心概念：}
+\begin{itemize}
+    \item \textbf{普通生成函数 (OGF, Ordinary Generating Function)：} $F(x)=\sum_{n\ge 0}a_nx^n$。两个 OGF 相乘对应序列的\textbf{卷积}：$c_n=\sum_{i+j=n}a_ib_j$，组合意义为「无序拼接」——把问题拆成两个独立子问题再合并方案数。
+    \item \textbf{指数生成函数 (EGF, Exponential Generating Function)：} $\hat F(x)=\sum_{n\ge 0}a_n\dfrac{x^n}{n!}$。两个 EGF 相乘时 $c_n=\sum_{i}\binom{n}{i}a_ib_{n-i}$，组合意义为「标号拆分」——自动携带把 $n$ 个标号元素分配给两部分的方案数，适合排列、集合划分等\textbf{带标号}计数。
+    \item \textbf{形式幂级数：} 生成函数只关心系数、不考虑收敛性，加法、乘法、求导、复合等规则与多项式完全一致。
+    \item \textbf{常用运算对应：} 乘 $x$ 对应下标整体 $+1$；求导 $F'$ 对应取出 $a_{n+1}$；$\dfrac{F(x)}{1-x}$ 对应前缀和；$\bmod\ x^n$ 对应「只保留前 $n$ 项」（多项式模板的语义）。
+    \item \textbf{建模套路：} 对递推式两端建立生成函数，转化为代数方程求解。例如 Catalan 数 $C_{n+1}=\sum_{i}C_iC_{n-i}$ 解得 $C(x)=\dfrac{1-\sqrt{1-4x}}{2x}$，直接用多项式开方 + 求逆即可批量求值。
+\end{itemize}
+
+\textbf{常见数列的生成函数：}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{|c|c|X|}
+\hline
+\textbf{数列 $a_n$} & \textbf{生成函数} & \textbf{说明} \\ \hline
+$1,1,1,\dots$ & $\dfrac{1}{1-x}$ & 基础几何级数 (OGF) \\ \hline
+$1,q,q^2,\dots$ & $\dfrac{1}{1-qx}$ & 等比数列 (OGF) \\ \hline
+$\binom{m}{n}$（固定 $m$） & $(1+x)^m$ & 二项式定理 (OGF) \\ \hline
+$\binom{n+m-1}{n}$ & $\dfrac{1}{(1-x)^m}$ & $n$ 次可重选取 (OGF) \\ \hline
+$0,1,1,2,3,\dots$ (Fibonacci) & $\dfrac{x}{1-x-x^2}$ & $F_n=F_{n-1}+F_{n-2}$ (OGF) \\ \hline
+$\dfrac{1}{n+1}\binom{2n}{n}$ (Catalan) & $\dfrac{1-\sqrt{1-4x}}{2x}$ & $C_{n+1}=\sum_{i=0}^{n}C_iC_{n-i}$ (OGF) \\ \hline
+$n!$ & $\dfrac{1}{1-x}$ & 排列数 (EGF) \\ \hline
+$S(n,k)$（固定 $k$） & $\dfrac{(e^x-1)^k}{k!}$ & 第二类斯特林数：$n$ 个标号元素分为 $k$ 个非空无序集合 (EGF) \\ \hline
+贝尔数 $B_n$ & $e^{e^x-1}$ & 集合划分总数 $\sum_k S(n,k)$ (EGF) \\ \hline
+错位排列 $D_n$ & $\dfrac{e^{-x}}{1-x}$ & $D_n=n!\sum_{i=0}^{n}\dfrac{(-1)^i}{i!}$ (EGF) \\ \hline
+\end{tabularx}
+\end{center}
+
+\textbf{说明：}
+\begin{itemize}
+    \item OGF 适合无标号 / 序列型组合，EGF 适合标号组合；同一数列的 OGF 与 EGF 一般不同，查表时注意区分。
+    \item 表中 $e^x=\sum_{n\ge 0}\dfrac{x^n}{n!}$ 可视为「单个标号元素集合」的 EGF，是构造斯特林数、贝尔数等 EGF 的基本积木。
+\end{itemize}
+
+\subsubsection{多项式求逆 (Polynomial Inverse)}
+
+\textbf{用途：}  
+给定 $n$ 项多项式 $A(x)$（$a_0\not\equiv 0$），求 $B(x)$ 的前 $n$ 项使得
+\[ A(x)\,B(x) \equiv 1 \pmod{x^n}. \]
+多项式求逆是开方、\code{ln}/\code{exp}、除法取模的\textbf{公共底层依赖}，也是生成函数中「$1/F(x)$」这一除法运算的直接实现。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{Newton 迭代（倍增）：} 已知 $B_t \equiv A^{-1} \pmod{x^t}$，则
+    \[ B_{2t} \;=\; B_t\,\bigl(2 - A\,B_t\bigr) \pmod{x^{2t}}, \]
+    误差以平方速度缩减，精度每轮翻倍。
+    \item \textbf{初值：} $B_1 = a_0^{-1} \bmod p$，单点逆元用费马小定理求得。
+    \item \textbf{NTT 长度：} 每轮变换长度取 $2k$，保证 $A B_t^2$ 的次数界不超过 $2k-3$，不会发生循环卷积回绕。
+\end{itemize}
+
+\textbf{时间复杂度：} 递推 $T(n)=T(n/2)+O(n\log n)=O(n\log n)$。空间复杂度 $O(n)$。
+
+\lstinputlisting[language=C++]{codes/06-math-10.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 代码自包含（内嵌与 06-math-02 相同的 NTT），可整文件复制到比赛工程中使用。
+    \item 若 $a_0 \equiv 0$ 则逆不存在，题面一般保证 $a_0 \ne 0$。
+    \item 生成函数建模中「$\bmod\ x^n$」正对应「只看前 $n$ 项」，多项式求逆即该语义下的 $1/A$。
+\end{itemize}
+
+\subsubsection{多项式开方 (Polynomial Square Root)}
+
+\textbf{用途：}  
+给定 $n$ 项多项式 $A(x)$，求 $B(x)$ 的前 $n$ 项使 $B(x)^2 \equiv A(x) \pmod{x^n}$。生成函数中大量形如 $F=xF^2+1$（Catalan）、$F^2=F+x$ 的代数方程都归结为多项式开方。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{Newton 迭代：} 已知 $B_t^2 \equiv A \pmod{x^t}$，则
+    \[ B_{2t} \;=\; \frac{1}{2}\left(B_t + A\,B_t^{-1}\right) \pmod{x^{2t}}, \]
+    其中 $B_t^{-1}$ 用多项式求逆（上一小节）计算。
+    \item \textbf{常数项：} 要求 $a_0$ 在模意义下可开方；本模板默认 $a_0=1$（竞赛题最常见），一般情形需先用 Cipolla 算法（二次剩余）求出 $\sqrt{a_0} \bmod p$ 作为初值。
+\end{itemize}
+
+\textbf{时间复杂度：} 每轮一次多项式求逆 + 一次乘法，$T(n)=T(n/2)+O(n\log n)=O(n\log n)$。
+
+\lstinputlisting[language=C++]{codes/06-math-11.cpp}
+
+\subsubsection{多项式对数与指数 (Polynomial ln / exp)}
+
+\textbf{用途：}  
+$\ln A$ 与 $\exp A=\sum_{k\ge 0}\dfrac{A^k}{k!}$ 是 EGF 运算的核心：多项式快速幂 $A^{p}=\exp(p\ln A)$（$p$ 可以是任意大的整数甚至有理数）、EGF 的组合构造（集合、序列构造）都依赖它们。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{对数（要求 $a_0=1$）：} 对 $\ln A$ 求导消去常数项后积分还原：
+    \[ \ln A \;=\; \int \frac{A'}{A}\,\mathrm{d}x, \]
+    即「求导 $\to$ 乘 $A^{-1} \to$ 积分」，积分时逐项 $b_i = \dfrac{c_{i-1}}{i}$。
+    \item \textbf{指数（要求 $a_0=0$）：} 对 $G(E)=\ln E - A$ 做 Newton 迭代：
+    \[ E_{2t} \;=\; E_t\,\bigl(1 + A - \ln E_t\bigr) \pmod{x^{2t}}. \]
+    \item \textbf{多项式快速幂：} $A^p=e^{p\ln A}$，要求 $a_0=1$；若 $a_0\ne 1$，先提出 $x$ 的幂次与常数项单独处理。
+\end{itemize}
+
+\textbf{时间复杂度：} $\ln$ 为一次求逆 + 一次乘法 $O(n\log n)$；\code{exp} 每轮一次 $\ln$ + 一次乘法，同样 $O(n\log n)$。
+
+\lstinputlisting[language=C++]{codes/06-math-12.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+    \item $\ln$ 的常数项：$a_0\ne 1$ 时先整体除以 $a_0$ 再计算；$\ln a_0$ 在模意义下无初等求法，通常题目不涉及。
+    \item \code{exp} 要求 $a_0=0$，这是 $e^{a_0}$ 在模意义下有定义的自然要求。
+\end{itemize}
+
+\subsubsection{多项式除法与取模 (Polynomial Division and Modulo)}
+
+\textbf{用途：}  
+给定 $n$ 项多项式 $A$、$m$ 项多项式 $B$（$b_{m-1}\ne 0$），求唯一的 $Q,R$ 使
+\[ A \;=\; Q\,B + R, \qquad \deg R < m-1. \]
+典型应用：\textbf{常系数齐次线性递推}中把 $x^n$ 对特征多项式取模（Kitamasa / 多项式快速幂优化递推），以及多项式 GCD。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{系数反转：} 定义 $A^{R}(x)=x^{n-1}A(1/x)$（系数倒序排列）。由 $A=QB+R$ 且 $\deg R < m-1$ 可得
+    \[ A^{R} \;\equiv\; Q^{R}\,B^{R} \pmod{x^{\,n-m+1}}, \]
+    余式 $R$ 的次数过低，在 $\bmod\ x^{n-m+1}$ 意义下被完全消去。
+    \item \textbf{求商：} $Q^{R} \equiv A^{R}\,(B^{R})^{-1} \pmod{x^{n-m+1}}$，用多项式求逆后相乘，再反转回 $Q$。
+    \item \textbf{求余：} $R = A - Q B$，一次乘法后逐位相减。
+\end{itemize}
+
+\textbf{时间复杂度：} 两次多项式乘法 + 一次多项式求逆，$O(n\log n)$。
+
+\lstinputlisting[language=C++]{codes/06-math-13.cpp}
+
+\subsection{矩阵与线性代数 (Matrix and Linear Algebra)}
+
+\subsubsection{矩阵乘法 (Matrix Multiplication)}
+
+\textbf{用途：}
+在 $O(nmk)$ 时间内计算两个矩阵的乘积。若矩阵 $A$ 为 $n \times m$，矩阵 $B$ 为 $m \times p$，则乘积 $C = A \times B$ 为 $n \times p$，其中
+$C_{i,j} = \sum_{k=0}^{m-1} A_{i,k} B_{k,j}$。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{三重循环：} 直接按定义枚举中间维度 $k$。
+    \item \textbf{复杂度：} 乘法时间复杂度为 $O(nmp)$，空间复杂度为 $O(np)$。
+    \item \textbf{适用场景：} 适合处理较小规模矩阵，或作为矩阵快速幂和动态规划中的基础子过程。
+\end{itemize}
+
+\textbf{代码模板：}
+
+\lstinputlisting[language=C++]{codes/06-math-03.cpp}
+
+\subsubsection{矩阵快速幂 (Matrix Fast Power)}
+
+\textbf{用途：}
+在 $O(n^3 \log k)$ 时间内求解矩阵 $A^k$，常用于递推数列、状态转移和线性递推问题。对于方阵 $A$，可以通过二进制分解将幂运算降为若干次矩阵乘法。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{二进制分解：} 将指数 $k$ 写成二进制形式，按位处理。
+    \item \textbf{递推维护：} 维护当前结果矩阵 $res$ 和底矩阵 $base$，当某一位为 $1$ 时更新 $res = res \times base$。
+    \item \textbf{平方更新：} 每轮都将 $base$ 自乘一次，从而在 $O(\log k)$ 轮内得到 $A^k$。
+\end{itemize}
+
+\textbf{时间复杂度：} 预处理和每轮乘法依赖矩阵乘法，整体复杂度为 $O(n^3 \log k)$。空间复杂度为 $O(n^2)$。
+
+\textbf{代码模板：}
+
+\lstinputlisting[language=C++]{codes/06-math-04.cpp}
+
+\subsubsection{高斯消元 (Gaussian Elimination)}
+
+\textbf{用途：}
+求解 $n$ 元一次线性方程组 $A \boldsymbol{x} = \boldsymbol{b}$，其中 $A$ 为 $n \times n$ 系数矩阵，$\boldsymbol{b}$ 为常数向量。也可用于计算矩阵的行列式和秩。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{行初等变换：} 通过倍加、交换、缩放三种操作将增广矩阵化为行阶梯形，再回代求解。
+    \item \textbf{列主元：} 每次选取当前列中绝对值最大的行作为主元行，交换到当前行再消去，以减小浮点误差。
+    \item \textbf{无解 / 无穷解判定：} 消元后若出现系数全为 $0$ 而常数非 $0$ 的行则无解；若出现全 $0$ 行则有无穷多解。
+\end{itemize}
+
+\textbf{时间复杂度：} $O(n^3)$，消元过程为三层循环。空间复杂度 $O(n^2)$。
+
+\textbf{代码模板：}
+
+\lstinputlisting[language=C++]{codes/06-math-05.cpp}
+
+\subsubsection{线性基 (Linear Basis)}
+
+\textbf{用途：}
+在 $O(\log V)$ 时间内维护一组数的异或 (XOR) 张成空间，支持查询最大/最小异或值、第 $k$ 小异或值以及合并两个线性基。线性基是解决异或相关问题的利器，常用于求最大异或和、异或第 $k$ 小、异或方程组等问题。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{线性空间：} 将每个数视为 $\text{GF}(2)$ 上的 $d$ 维向量（$d$ 为二进制位数），线性基即为该向量空间的一组基。
+    \item \textbf{上三角形式：} 维护一个长度为 $d$ 的数组 $basis$，其中 $basis[i]$ 的最高位为第 $i$ 位（若存在），高位向低位消去，保证基向量之间线性无关。
+    \item \textbf{插入过程：} 从高位到低位扫描 $x$ 的二进制位，若 $x$ 的第 $i$ 位为 $1$：若 $basis[i]$ 为空则存入并返回；否则 $x \gets x \oplus basis[i]$ 继续。
+    \item \textbf{重构（rebuild）：} 将基化为最简形式，使得 $basis[i]$ 的最高位唯一为 $i$，且该位不出现在其他基向量中，从而支持第 $k$ 小查询。
+    \item \textbf{第 $k$ 小：} 重构后基向量个数为 $m$，张成的不同异或值恰有 $2^m$ 个（若原集合可异或出 $0$ 则为 $2^m$ 个，否则 $2^m-1$ 个），将 $k$ 二进制分解后对应选取基向量即可。
+\end{itemize}
+
+\textbf{时间复杂度：}
+\begin{itemize}
+    \item 插入 / 查询最大异或值 / 判断可表示性：$O(\log V)$。
+    \item 重构：$O(\log^2 V)$。
+    \item 第 $k$ 小查询：重构后 $O(\log V)$。
+    \item 合并两个线性基：$O(\log^2 V)$。
+\end{itemize}
+
+\lstinputlisting[language=C++]{codes/06-math-06.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 上述代码以 $60$ 位整数为例，适用于 $10^{18}$ 范围的数据；若需处理 $32$ 位整数，将 \texttt{LOG} 改为 $31$ 即可。
+    \item 线性基不保存原始数据（除非在插入时做额外记录），仅维护张成空间。
+    \item 若原集合可以异或出 $0$，则第 $k$ 小查询中 $k=0$ 对应 $0$；否则 $k=0$ 对应最小非零值。
+    \item 需要判断 $0$ 是否可被表示时，只需额外维护一个 \texttt{bool hasZero} 标记即可。
+\end{itemize}
+
+\subsection{素数筛 (Prime Sieve)}
+
+\subsubsection{埃氏筛 (Sieve of Eratosthenes)}
+
+\textbf{用途：}
+在 $O(n \log \log n)$ 时间内找出 $[2, n]$ 内的所有质数，是最基础、最常用的质数筛选方法。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{标记合数：} 从最小的质数 $2$ 开始，依次把它的倍数标记为合数；遍历结束后仍未被标记的数即为质数。
+    \item \textbf{从 $i^2$ 开始筛：} 对质数 $i$，小于 $i^2$ 的倍数 $2i, 3i, \dots, (i-1)i$ 都含有更小的质因子，已被更早的质数标记过，因此只需从 $i^2$ 开始，避免重复标记。
+    \item \textbf{只需筛到 $\sqrt{n}$：} 若 $i > \sqrt{n}$，则 $i^2 > n$，无需继续。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+    \item 初始化布尔数组 \texttt{isPrime[2..n]} 全部为 \texttt{true}（下标 $0, 1$ 置为 \texttt{false}）。
+    \item 枚举 $i = 2, 3, \dots, \lfloor\sqrt{n}\rfloor$：若 $i$ 仍为质数，则标记 $i^2, i^2+i, i^2+2i, \dots \le n$ 为合数。
+    \item 遍历 $[2, n]$，值仍为 \texttt{true} 的下标即全部质数。
+\end{enumerate}
+
+\textbf{时间复杂度：} $O(n \log \log n)$，空间复杂度 $O(n)$（使用 \texttt{bitset} 可压缩为 $O(n/8)$ 字节）。
+
+\lstinputlisting[language=C++]{codes/06-math-07.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 实际标记次数约为 $n \sum_{p \le \sqrt{n}} \frac{1}{p} = O(n \log \log n)$，当 $n \le 10^7$ 时运行速度很快。
+    \item 若只需要判断单个大数是否为质数，应使用 Miller--Rabin 素性测试而非筛法。
+\end{itemize}
+
+\subsubsection{欧拉筛 (Euler's Sieve / Linear Sieve)}
+
+\textbf{说明：} 欧拉筛（线性筛）的实现已并入下文「欧拉函数与欧拉定理」一节的\textbf{线性筛求欧拉函数}小节，其中同时给出质数表、欧拉函数递推与最小质因子数组（可用于 $O(\log x)$ 质因数分解），请查阅该节内容。埃氏筛实现更简单、常数更小，配合 \code{bitset} 更省内存；欧拉筛复杂度严格线性且易于扩展，两者按需选用。
+
+\subsection{扩展欧几里得 (Extended Euclidean Algorithm)}
+
+\textbf{用途：}
+求不定方程 $ax + by = \gcd(a, b)$ 的一组整数解，进而解决：任意模数（不要求质数）下的乘法逆元、线性同余方程 $ax \equiv c \pmod{m}$，以及中国剩余定理 (CRT) 中同余方程的合并。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{裴蜀定理 (Bézout's Identity)：} $ax + by$ 能取到的最小正整数恰为 $\gcd(a, b)$，故 $ax + by = c$ 有整数解当且仅当 $\gcd(a, b) \mid c$。
+    \item \textbf{递归回代：} 设已求得 $b\,x_1 + (a \bmod b)\,y_1 = g$，代入 $a \bmod b = a - \lfloor a/b \rfloor \cdot b$ 整理得 $x = y_1$，$y = x_1 - \lfloor a/b \rfloor\, y_1$；边界 $b = 0$ 时取 $x = 1$，$y = 0$。
+    \item \textbf{通解与最小非负解：} 由特解 $(x_0, y_0)$ 得通解 $x = x_0 + k\cdot\dfrac{b}{g}$，$y = y_0 - k\cdot\dfrac{a}{g}$（$k$ 为任意整数）；最小非负 $x$ 为 $\left(x_0 \bmod \dfrac{b}{g} + \dfrac{b}{g}\right) \bmod \dfrac{b}{g}$。
+    \item \textbf{求逆元：} $\gcd(a, m) = 1$ 时，$ax \equiv 1 \pmod{m}$ 的解即 $x \bmod m$，这是费马小定理求逆元在\textbf{非质数模数}下的替代方案。
+\end{itemize}
+
+\textbf{时间复杂度：} 与普通欧几里得算法相同，为 $O(\log \min(a, b))$。
+
+\lstinputlisting[language=C++]{codes/06-math-19.cpp}
+
+\begin{quote}
+\textbf{注意：} 递归求出的特解满足 $|x| \le \dfrac{b}{g}$，$|y| \le \dfrac{a}{g}$，本身不会溢出；但特解参与「先乘后取模」的运算时仍需 \code{\_\_int128} 或先取模防溢出。
+\end{quote}
+
+\subsection{欧拉函数与欧拉定理 (Euler's Totient Function and Euler's Theorem)}
+
+\subsubsection{欧拉函数的定义与性质 (Definition and Properties)}
+
+\textbf{用途：}
+欧拉函数 (Euler's Totient Function) $\varphi(n)$ 表示 $1 \sim n$ 中与 $n$ 互质的数的个数，是模运算、求逆元、阶与原根等数论问题的基石；欧拉定理则给出模意义下幂的周期上界。
+
+\textbf{定义：}
+\[
+\varphi(n) = \sum_{k=1}^{n} [\gcd(k, n) = 1]
+\]
+前几个值：$\varphi(1) = 1$，$\varphi(2) = 1$，$\varphi(3) = 2$，$\varphi(4) = 2$，$\varphi(6) = 2$，$\varphi(12) = 4$。
+
+\textbf{核心性质：}
+\begin{itemize}
+    \item \textbf{素数幂：} $\varphi(p^{k}) = p^{k} - p^{k-1} = p^{k-1}(p-1)$，因为 $1 \sim p^{k}$ 中 $p$ 的倍数恰有 $p^{k-1}$ 个；特别地，素数 $p$ 满足 $\varphi(p) = p - 1$。
+    \item \textbf{积性：} 若 $\gcd(m, n) = 1$，则 $\varphi(mn) = \varphi(m) \cdot \varphi(n)$。注意积性\textbf{要求互质}：$\varphi(4) \neq \varphi(2) \cdot \varphi(2)$，这是最常见的记错点。
+    \item \textbf{通项公式：} 设 $n = \prod p_i^{e_i}$，则 $\varphi(n) = n \prod_{p \mid n} \left(1 - \frac{1}{p}\right)$，由前两条性质拼接而来，也是单点求法（试除）的依据。
+    \item \textbf{约数和：} $\sum_{d \mid n} \varphi(d) = n$。证明思路：把分数 $\frac{1}{n}, \frac{2}{n}, \dots, \frac{n}{n}$ 全部约分成最简形式，分母为 $d$ 的恰有 $\varphi(d)$ 个。这条性质是反演与筛法的常客，例如 $\sum_{i=1}^{n} \gcd(i, n) = \sum_{d \mid n} d \cdot \varphi(n/d)$。
+    \item \textbf{推论：} $\varphi(1) = 1$；$n \ge 3$ 时 $\varphi(n)$ 为偶数（把 $k$ 与 $n-k$ 配对即可）。
+\end{itemize}
+
+\subsubsection{试除法求欧拉函数 (Trial Division)}
+
+\textbf{用途：}
+单独求某个 $\varphi(n)$（$n$ 可达 $10^{18}$ 级别）：按通项公式，在试除分解质因数的同时累乘 $\left(1 - \frac{1}{p}\right)$。
+
+\textbf{时间复杂度：} $O(\sqrt{n})$。
+
+\lstinputlisting[language=C++]{codes/06-math-17.cpp}
+
+\begin{quote}
+\textbf{注意：} 累乘必须写成 \code{result = result / p * (p - 1)}，先除后乘；写成 \code{result * (p - 1) / p} 会因中间结果过大而溢出。
+\end{quote}
+
+\subsubsection{线性筛求欧拉函数 (Linear Sieve)}
+
+\textbf{用途：}
+批量求 $\varphi(1) \sim \varphi(n)$，即欧拉筛（线性筛）——每个合数只被其最小质因子筛掉一次，在筛的同时递推 $\varphi$，并记录最小质因子数组 \code{min\_prime\_factor}，支持 $O(\log x)$ 质因数分解。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item $i$ 是素数：$\varphi(i) = i - 1$。
+    \item $p$ 为 $i$ 的最小质因子（$p \mid i$）：$\varphi(ip) = \varphi(i) \cdot p$，因为 $ip$ 与 $i$ 的质因子集合完全相同，通项中 $n$ 多乘一个 $p$ 而 $\left(1 - \frac{1}{p}\right)$ 不变。
+    \item $p \nmid i$（互质）：直接用积性 $\varphi(ip) = \varphi(i) \cdot (p-1)$。
+\end{itemize}
+
+\textbf{时间复杂度：} 严格 $O(n)$，空间复杂度 $O(n)$。
+
+\lstinputlisting[language=C++]{codes/06-math-18.cpp}
+
+\subsubsection{欧拉定理与费马小定理 (Euler's Theorem and Fermat's Little Theorem)}
+
+\textbf{欧拉定理：} 若 $\gcd(a, m) = 1$，则
+\[
+a^{\varphi(m)} \equiv 1 \pmod{m}
+\]
+直觉：幂序列 $1, a, a^{2}, \dots$ 在模 $m$ 下取值有限，必有循环节；欧拉定理说明循环节长度（即「阶」）不超过 $\varphi(m)$，且整除 $\varphi(m)$。
+
+\textbf{费马小定理：} $p$ 为素数且 $p \nmid a$ 时，$a^{p-1} \equiv 1 \pmod{p}$，即欧拉定理取 $m = p$ 的特例；移项得 $a \cdot a^{p-2} \equiv 1 \pmod{p}$，这正是「素数模数用快速幂求逆元」的出处。
+
+\begin{quote}
+\textbf{注意：} 两个定理都要求底数与模数\textbf{互质}；不互质时只能用扩展欧拉定理降幂。
+\end{quote}
+
+\subsubsection{扩展欧拉定理 (Extended Euler's Theorem)}
+
+\textbf{用途：}
+指数 $b$ 过大（高精度字符串、递推产生、$10^{18}$ 级别）时求 $a^{b} \bmod m$，用降幂把指数压进 $O(\varphi(m))$ 以内，分三种情形：
+\begin{enumerate}
+    \item $\gcd(a, m) = 1$：$a^{b} \equiv a^{\,b \bmod \varphi(m)} \pmod{m}$；
+    \item $\gcd(a, m) > 1$ 且 $b < \varphi(m)$：$a^{b}$ 直接计算，\textbf{不能}降幂；
+    \item $\gcd(a, m) > 1$ 且 $b \ge \varphi(m)$：$a^{b} \equiv a^{\,b \bmod \varphi(m) + \varphi(m)} \pmod{m}$。
+\end{enumerate}
+
+竞赛惯用写法：不判互质，统一按第三条处理，但必须确认 $b \ge \varphi(m)$——指数以字符串读入时，边取模边记录「是否已达到 $\varphi(m)$」。
+
+\textbf{易错点：}
+\begin{itemize}
+    \item 积性要求互质：$\varphi(2n) = 2\varphi(n)$ 仅在 $n$ 为奇数时成立。
+    \item 线性筛的转移：$p \mid i$ 时乘 $p$，$p \nmid i$ 时乘 $p-1$，写反全错；别忘了 \code{phi[1] = 1}。
+    \item 降幂加 $\varphi(m)$ 的前提是 $b \ge \varphi(m)$，指数读入为字符串时必须同时维护大小关系，不能只取模。
+\end{itemize}
+
+\subsection{博弈论 (Game Theory)}
+
+\subsubsection{Nim 游戏与 SG 函数 (Nim Game and Sprague--Grundy Theorem)}
+
+\textbf{用途：}  
+判定\textbf{公平组合游戏} (Impartial Combinatorial Game)：两名玩家轮流行动、局面完全可见、同一局面下双方可选操作相同、无法行动者输。SG 函数把任意此类游戏统一化归为 Nim 游戏，是博弈论判定的核心工具。
+
+\textbf{核心概念：}
+\begin{itemize}
+    \item \textbf{Nim 游戏：} $n$ 堆石子，每次从某一堆取走任意多个。结论：先手必胜 $\iff$ 所有堆数的异或和（Nim 和）$\ne 0$。
+    \item \textbf{P 局面 / N 局面：} $P$ (Previous) 表示「即将行动的玩家必败」，$N$ (Next) 表示必胜；无法行动的终态是 $P$ 局面。
+    \item \textbf{mex：} 集合中未出现的最小非负整数 (Minimum EXcluded)，如 $\operatorname{mex}\{0,1,3\}=2$、$\operatorname{mex}\{\}=0$。
+    \item \textbf{SG 函数：} 无后继的终态 $\operatorname{SG}=0$；一般地
+    \[ \operatorname{SG}(u) \;=\; \operatorname{mex}\{\operatorname{SG}(v) \;:\; v \text{ 为 } u \text{ 的后继局面}\}, \]
+    且 $\operatorname{SG}(u)=0 \iff u$ 为 $P$ 局面。
+    \item \textbf{SG 定理 (Sprague--Grundy)：} 总游戏由若干\textbf{独立}子游戏组成时，总局面等价于 Nim：$\operatorname{SG}_{\text{总}}=\bigoplus_i \operatorname{SG}_i$；先手必胜 $\iff \operatorname{SG}_{\text{总}}\ne 0$。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+    \item 把游戏规则建模为状态图 (DAG)：节点为局面，有向边为一步合法操作。
+    \item 记忆化搜索自底向上求每个局面的 SG 值：枚举全部后继，取后继 SG 集合的 mex。
+    \item 多个独立子游戏并存时，将各子游戏 SG 值异或，按 SG 定理判定先后手胜负。
+\end{enumerate}
+
+\textbf{时间复杂度：} 记忆化搜索 $O(\text{状态数}+\text{边数})$（mex 排序均摊近似线性）；Nim 判定 $O(n)$。
+
+\lstinputlisting[language=C++]{codes/06-math-14.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 一堆大小为 $a$ 的取石子游戏，SG 值恰为 $a$（每次可取任意个 $\Rightarrow$ 后继 SG 集合为 $\{0,1,\dots,a-1\}$），代入 SG 定理立即得到 Nim 结论。
+    \item 需要输出必胜策略时：先手第一步应把局面移动到任意一个 SG 值为 $0$ 的后继。
+    \item 状态图必须是\textbf{无环}的；存在循环局面的游戏（如「报数不能超过上限」类）需另行分析。
+\end{itemize}
+
+\subsubsection{常见组合博弈结论 (Classic Impartial Games)}
+
+\textbf{用途：}  
+以下经典模型存在闭式判定结论，识别出模型后直接套用即可，无需建图求 SG。
+
+\textbf{结论速查表：}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\textbf{模型} & \textbf{规则} & \textbf{先手必胜条件} \\ \hline
+巴什博弈 (Bash) & 一堆 $n$ 颗，每次取 $1\sim m$ 颗，取最后一颗者胜 & $n \bmod (m+1) \ne 0$ \\ \hline
+威佐夫博弈 (Wythoff) & 两堆，从一堆取任意颗或两堆同取等量，取最后一颗者胜 & $(a,b)$ 非奇异局势，即 $\min(a,b) \ne \lfloor d\varphi \rfloor$，$d=|a-b|$ \\ \hline
+阶梯博弈 (Staircase) & 台阶石子逐级下移，移到地面即消失，无法行动者败 & 奇数号台阶石子异或和 $\ne 0$ \\ \hline
+Anti-Nim & 与 Nim 相同，但\textbf{取走最后一颗者输} & 全 $1$ 且异或和 $=0$，或存在 $>1$ 的堆且异或和 $\ne 0$ \\ \hline
+\end{tabularx}
+\end{center}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 威佐夫博弈中 $\varphi=\dfrac{\sqrt5+1}{2}$ 为黄金比；奇异局势 $(\lfloor k\varphi\rfloor,\ \lfloor k\varphi^2\rfloor)$ 成对出现且互不相同，覆盖了所有必败局面。
+    \item 阶梯博弈（台阶从地面 $0$ 号起编号）等价于「只把\textbf{奇数号}台阶视作 Nim 堆」：偶数号石子被移动后，对手总能把它再移一级而镜像抵消，故只有奇数号台阶有效。
+    \item Anti-Nim 的「全 $1$」特判分支极易遗漏；类似的「取走最后一颗者输」变体 (Anti-SG) 结论形式相同。
+    \item 以上结论均可用 SG 函数暴力验证小规模数据后再套用，防止记忆偏差。
+\end{itemize}
+
+\lstinputlisting[language=C++]{codes/06-math-15.cpp}

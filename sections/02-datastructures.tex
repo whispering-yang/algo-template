@@ -1,0 +1,231 @@
+\section{数据结构}
+
+\subsection{并查集 (Disjoint Set Union)}
+
+\textbf{普通数组版本：}
+
+使用场景：元素编号连续且已知范围。
+
+时间复杂度 $O(\alpha (n))$
+
+\lstinputlisting[language=C++]{codes/02-datastructures-01.cpp}
+
+\textbf{键值对版本：}
+
+使用场景：元素稀疏、编号大或未知。
+
+\code{std::map} 时间复杂度 $O(\alpha(n)\log n)$，常数小且稳定。
+
+\code{std::unordered\_map} 最好和平均时间复杂度 $O(\alpha(n))$，但常数大且不稳定。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-02.cpp}
+
+\subsection{ST表 (Sparse Table)}
+
+\textbf{时间复杂度：} 建表 $O(n\log n)$，区间查询 $O(1)$。
+
+核心代码：
+\lstinputlisting[language=C++]{codes/02-datastructures-03.cpp}
+
+\subsection{树状数组 (Fenwick Tree)}
+
+\lstinputlisting[language=C++]{codes/02-datastructures-04.cpp}
+
+\subsection{线段树 (Segment Tree)}
+
+\textbf{用途：}
+以 $O(\log n)$ 的时间复杂度维护数组的\textbf{区间修改}与\textbf{区间查询}，经典操作包括区间加、区间求和、区间最值等。此处给出支持\textbf{区间加}与\textbf{区间求和}的基础模板。
+
+\textbf{核心结构：}
+\begin{itemize}
+  \item \textbf{完全二叉树：} 每个节点代表一个区间 $[l,r]$，左右儿子分别维护 $[l,\text{mid}]$ 和 $[\text{mid}+1,r]$。
+  \item \textbf{信息数组：} \texttt{sum[node]} 存储节点 node 所代表区间的元素和。
+  \item \textbf{懒惰标记：} \texttt{lazy[node]} 表示当前区间所有数需要被增加的值。通过延迟下传，避免每次修改都递归到叶子，保证单次操作 $O(\log n)$。
+\end{itemize}
+
+\textbf{操作流程：}
+\begin{enumerate}
+  \item \textbf{建树：} 递归建立线段树，叶子节点赋原始数组值，内部节点由子节点合并得到。时间复杂度 $O(n)$。
+  \item \textbf{区间加：} 从根向下递归，若当前区间完全被目标区间覆盖，则更新 \texttt{sum} 并累加 \texttt{lazy} 标记；否则先\textbf{下传标记}，再递归处理子区间，最后\textbf{合并}子节点信息。
+  \item \textbf{区间求和：} 类似递归，遇到完全覆盖的区间直接返回 \texttt{sum}，否则下传标记后合并左右查询结果。
+\end{enumerate}
+
+\textbf{时间复杂度：}
+单次区间加或区间查询均为 $O(\log n)$，建树 $O(n)$。空间复杂度 $O(n)$。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-05.cpp}
+
+\textbf{使用示例：}
+对数组 \texttt{init\_values[1..n]} 建树后，调用 \texttt{range\_add(1, 1, n, l, r, k)} 将区间 $[l,r]$ 全部加上 $k$，调用 \texttt{range\_query(1, 1, n, l, r)} 查询区间和。实际使用时可根据需求修改 \texttt{MAXN}，或加入取模操作。
+
+\subsection{李超线段树 (Li Chao Segment Tree)}
+
+\textbf{用途：}
+在二维平面上动态插入线段（或直线），并支持查询某横坐标处所有线段的最大值（或最小值）。经典应用如动态规划优化、直线拟合最值查询等。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{标记永久化：} 每个节点保存一条在该区间中点处取值最大的线段（优势线段），不下传标记，查询时沿路径合并所有经过节点的优势线段取最值。
+  \item \textbf{插入线段：} 递归到对应区间，每次比较当前节点优势线段与待插入线段在中点处的值，保留更好的那条，将另一条递归到左半或右半区间继续比较。
+  \item \textbf{查询最值：} 从根到叶子遍历所有节点的优势线段，取它们在查询点 $x$ 处的最大值。
+\end{itemize}
+
+\textbf{时间复杂度：}
+单次插入 $O(\log^2 X)$（$X$ 为横坐标值域大小），单次查询 $O(\log X)$。空间复杂度 $O(X)$。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-08.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+  \item 代码中 `XMAX` 为横坐标值域大小（右开区间 $[0, X)$），需按题目修改。
+  \item `add\_segment` 支持插入线段到指定横坐标区间，若为全局直线可调用 `add\_line` 或 `add\_segment(lid, 0, XMAX)`。
+  \item 查询返回的是线段编号，可通过 `ls[ans]` 获取具体值。如需最小值，将 `cmp` 中的判定符号取反即可。
+  \item 横坐标需为整数，值域不宜过大（通常 $\le 10^6$，可通过离散化优化）。
+\end{itemize}
+
+\subsection{树链剖分-重链剖分 (Heavy-Light Decomposition)}
+
+\textbf{用途：}
+将一棵有根树划分为若干条重链，结合 DFS 序与线段树等数据结构，高效支持\textbf{路径}与\textbf{子树}的批量修改和查询操作。
+常见操作有：路径上所有点权加 $k$、路径点权和、子树上所有点权加 $k$、子树点权和。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{重儿子：} 节点 $u$ 的所有儿子中，子树大小最大的那个。
+  \item \textbf{轻儿子：} 除了重儿子以外的儿子。
+  \item \textbf{重边 / 重链：} 连接重儿子与父节点的边；由重边首尾相连形成的链称为重链。
+  \item \textbf{DFS 序 (dfn)：} 在第二遍 DFS 时优先访问重儿子，使得每条重链上的节点在 DFS 序中\textbf{连续}。
+  \item \textbf{链顶 (chain\_top)：} 每个节点所在重链中深度最小的节点。
+\end{itemize}
+
+\textbf{算法流程（两遍 DFS）：}
+\begin{enumerate}
+  \item \textbf{第一遍 DFS：} 计算 \texttt{parent[u]}、\texttt{depth[u]}、\texttt{subtree\_size[u]} 以及 \texttt{heavy\_child[u]}（重儿子）。
+  \item \textbf{第二遍 DFS：} 按\textbf{优先重儿子}的顺序遍历，赋予每个节点 \texttt{dfn[u]}（DFS 序编号），并记录 \texttt{chain\_top[u]}（所在重链的链顶）。
+  \item \textbf{用线段树维护 DFS 序：} 根据 \texttt{dfn} 建树，初始权值按 \texttt{weight[dfn\_to\_node[dfn[u]]]} 填入。
+  \item \textbf{路径操作：} 每次选择 \texttt{depth[chain\_top[u]]} 较大的节点 $u$，对区间 \texttt{[dfn[chain\_top[u]], dfn[u]]} 进行修改/查询，然后令 \texttt{u = parent[chain\_top[u]]}，直至 $u,v$ 在同一条重链，再处理剩余区间。
+  \item \textbf{子树操作：} 子树在 DFS 序中对应连续区间 \texttt{[dfn[u], dfn[u]+subtree\_size[u]-1]}，直接在线段树上修改/查询即可。
+\end{enumerate}
+
+\textbf{时间复杂度分析：}
+设 $n$ 为树的大小，$q$ 为操作数。
+\begin{itemize}
+  \item 两遍 DFS 均为 $O(n)$。
+  \item 线段树建树 $O(n)$，每次区间操作 $O(\log n)$。
+  \item 一次路径操作会经过 $O(\log n)$ 条轻边（因为每走一条轻边子树大小至少翻倍），每次轻重链切换对线段树进行一次区间操作，故单次路径操作复杂度 $O(\log^2 n)$。
+  \item 单次子树操作只需一次区间操作，复杂度 $O(\log n)$。
+\end{itemize}
+因此总复杂度 $O(n + q\log^2 n)$，在大部分情况下表现优秀。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-06.cpp}
+
+\subsection{可持久化线段树 (Persistent Segment Tree / 主席树)}
+
+\textbf{用途：}
+在 $O(\log n)$ 时间内查询数组或树的\textbf{历史版本}，经典应用包括静态区间第 $k$ 小、动态前缀统计等。核心思想是每次修改只新建 $O(\log n)$ 个节点，复用未修改的部分。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{可持久化 (Persistence)：} 每次修改操作创建一个新版本，旧版本仍然可访问。
+  \item \textbf{动态开点：} 不预先建满整棵树，只有在需要访问某节点时才创建，节省空间。
+  \item \textbf{节点复用：} 新版本与旧版本共享未修改的子树，仅复制并修改受影响的 $O(\log n)$ 个节点。
+  \item \textbf{权值线段树：} 以值域为下标，每个节点维护对应值域内元素个数，适合解决第 $k$ 小问题。
+\end{itemize}
+
+\textbf{算法流程（以静态区间第 $k$ 小为例）：}
+\begin{enumerate}
+  \item 将原数组离散化到 $[1, m]$。
+  \item 依次将每个元素插入权值线段树，每次插入生成一个新版本 $\text{root}[i]$。
+  \item 查询区间 $[l, r]$ 的第 $k$ 小时，同时遍历 $\text{root}[l-1]$ 和 $\text{root}[r]$：左子树节点值相减得到区间内落在左值域的元素个数，据此决定向左还是向右递归。
+\end{enumerate}
+
+\textbf{时间复杂度：}
+建树 $O(n\log m)$，单次查询 $O(\log m)$，空间复杂度 $O(n\log m)$。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-07.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+  \item 上述代码为静态区间第 $k$ 小的经典模板（主席树）。
+  \item \textbf{数组大小的一般要求：} 主席树的节点数组需要容纳初始树的全部节点加上每次修改产生的新节点。
+          \begin{itemize}
+            \item 初始空树（版本 0）若预先递归建树，需约 $4n$ 个节点（与普通线段树一致）。
+            \item 每插入一个元素，沿值域路径创建 $\lceil \log_2 m \rceil$ 个新节点，共 $n$ 次插入产生约 $n \log_2 m$ 个新节点，其中 $m$ 为离散化后的值域大小。
+            \item 总节点数 $\approx 4n + n \log_2 m$。离散化后 $m \le n$，故 $\log_2 m \le \log_2 n \approx 17 \sim 20$，即 $4n + n \log_2 n$。
+          \end{itemize}
+  \item \textbf{为什么 $32 \times M$ 是经验值：}
+          \begin{itemize}
+            \item $32$ 拆解为 $4 + 28$：$4$ 对应初始树的 $4$ 倍空间，$28$ 为每次插入预留的新节点数。
+            \item $\log_2(10^9) \approx 29.9$，$28$ 略小于该值但对于值域离散化后的情况已足够。实际竞赛题中值域 $m$ 通常不超过 $2 \times 10^5$，$\log_2(2 \times 10^5) \approx 18$，$28$ 留有充足余量。
+            \item 即使值域未离散化（如直接对 $10^9$ 建树），$n$ 次插入也仅需约 $n \times 30$ 个新节点，$32$ 仍能覆盖。
+            \item $32$ 是 $2$ 的幂次，方便编译器优化且语义清晰，已成为竞赛社区的通用经验值。代码中 `MAXN << 5`（乘以 $32$）是典型的写法。
+          \end{itemize}
+  \item 查询时同时传入 $\text{root}[l-1]$ 和 $\text{root}[r]$，利用前缀和思想得到区间内的权值线段树。
+  \item 如需支持单点修改的历史版本查询（可持久化数组），可将 \texttt{cnt} 替换为具体值，修改 \texttt{insert} 逻辑即可。
+\end{itemize}
+
+\subsection{FHQ Treap (无旋 Treap)}
+
+\textbf{用途：}
+一种基于\textbf{随机优先级}和\textbf{分裂/合并}操作的平衡树，支持插入、删除、查排名、查第 $k$ 小、前驱、后继等操作，且无需旋转。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{随机优先级：} 每个节点赋予一个随机优先级，通过 \texttt{merge} 维护堆性质，保证树高期望 $O(\log n)$。
+  \item \textbf{分裂 (split)：} 按值 $val$ 将树拆分成两棵子树 $x$（$\le val$）和 $y$（$> val$）。
+  \item \textbf{合并 (merge)：} 合并两棵子树，保证左树所有值 $\le$ 右树所有值，按优先级维护堆结构。
+\end{itemize}
+
+\textbf{操作流程：}
+\begin{enumerate}
+  \item \textbf{插入：} 按 $val$ 分裂，新建节点后合并三部分。
+  \item \textbf{删除：} 两次分裂取出所有值为 $val$ 的节点，合并其左右儿子后合并剩余部分。
+  \item \textbf{查排名：} 按 $val-1$ 分裂，左树大小 $+1$ 即为排名。
+  \item \textbf{查第 $k$ 小：} 在树上根据子树大小向下查找。
+  \item \textbf{前驱/后继：} 分裂后分别取左树最右节点或右树最左节点。
+\end{enumerate}
+
+\textbf{时间复杂度：}
+所有操作单次期望 $O(\log n)$。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-09.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+  \item \texttt{MAXN} 需根据题目数据范围调整，若操作数较大可改为动态分配或使用 \texttt{vector<Node>}。
+  \item \texttt{split} 按值分裂，若需按排名分裂可修改比较逻辑。
+  \item 使用 \texttt{array<Node, MAXN>} 预分配内存，避免动态内存开销，适合竞赛场景。
+  \item 需要前驱/后继时，注意 $x$ 或 $y$ 可能为空（返回 $0$ 表示不存在），实际使用时应根据题目要求处理边界。
+\end{itemize}
+
+\subsection{可持久化 FHQ-Treap (Persistent FHQ-Treap)}
+
+\textbf{用途：}
+在 FHQ-Treap 的基础上支持\textbf{可持久化}，每次插入/删除操作创建一个新版本，旧版本仍可访问。适用于需要维护历史状态或可回滚的平衡树场景。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{路径拷贝：} 在 \texttt{split} 和 \texttt{merge} 中，所有被访问的节点均\textbf{复制}一份（\texttt{new\_node(tree[u])}），新节点与原节点共享未修改的子节点。
+  \item \textbf{多版本根：} 使用 \texttt{rts[i]} 数组保存每个版本的根节点，第 $i$ 次操作基于 \texttt{rts[v]} 创建新版本 \texttt{rts[i]}。
+  \item \textbf{查询免拷贝：} 只读操作（查排名、第 $k$ 小、前驱、后继）直接遍历原树，无需拷贝节点。
+\end{itemize}
+
+\textbf{与普通 FHQ-Treap 的区别：}
+\begin{itemize}
+  \item \texttt{split} 和 \texttt{merge} 内部会拷贝途径节点，返回新节点编号。
+  \item \texttt{insert} 和 \texttt{erase} 返回新版本的根（而非修改原根）。
+  \item 节点数组大小需按版本数预留空间（约为 $n \log n + m$，$n$ 为元素数，$m$ 为版本数）。
+\end{itemize}
+
+\textbf{时间复杂度：}
+单次操作期望 $O(\log n)$，空间复杂度 $O(m \log n)$（$m$ 为版本数）。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-10.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+  \item 数组 \texttt{tree} 预分配了 $5 \times \text{MAXN} \times \lceil \log_2 \text{MAXN} \rceil$ 的空间，可根据题目调整。
+  \item 每次操作前需将当前版本的根复制到新版本：\texttt{rts[i] = rts[v];}，然后根据操作类型调用 \texttt{insert/erase} 更新 \texttt{rts[i]}。
+  \item 只读查询（排名、第 $k$ 小等）直接传入 \texttt{rts[v]} 即可，不会修改版本。
+  \item 拷贝构造函数 \texttt{Node(const Node \&)} 是持久化的关键，需确保随机优先级 \texttt{pri} 也被原样保留（不重新随机）。
+\end{itemize}

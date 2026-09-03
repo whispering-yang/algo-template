@@ -1,0 +1,72 @@
+% mystyle.sty
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{mystyle}[2026/06/08 My Custom Style Package]
+
+% ==========================================
+% 1. 加载必要的宏包
+% ==========================================
+\RequirePackage{geometry}      % 页面布局
+\RequirePackage{xcolor}        % 颜色定义
+\RequirePackage{titlesec}      % 标题格式
+\RequirePackage{fancyhdr}      % 页眉页脚
+% \RequirePackage{ctex}        % 中文支持（由 ctexart 文档类提供）
+\RequirePackage{hyperref}      % 超链接
+
+% ==========================================
+% 2. 定义全局颜色变量
+% ==========================================
+\definecolor{PrimaryColor}{HTML}{2C3E50}
+\definecolor{AccentColor}{HTML}{E74C3C}
+\definecolor{LightGray}{HTML}{F5F5F5}
+
+% ==========================================
+% 3. 页面布局设置
+% ==========================================
+\geometry{
+    a4paper,
+    top=2.5cm,
+    bottom=2.5cm,
+    left=3cm,
+    right=2.5cm,
+    headheight=14pt
+}
+
+% ==========================================
+% 4. 标题样式定制
+% ==========================================
+\titleformat{\section}
+  {\Large\bfseries\color{PrimaryColor}}
+  {\thesection}{1em}{}
+  
+\titleformat{\subsection}
+  {\large\bfseries\color{PrimaryColor!80}}
+  {\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+  {\normalsize\bfseries\color{PrimaryColor!60}}
+  {\thesubsubsection}{1em}{}
+
+% ==========================================
+% 5. 页眉页脚
+% ==========================================
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{gray}{\leftmark}}
+\fancyhead[R]{\small\textcolor{gray}{My Document}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+
+% ==========================================
+% 6. 自定义命令/环境
+% ==========================================
+\newcommand{\highlight}[1]{%
+  \colorbox{LightGray}{\padding{3pt}{#1}}%
+}
+
+\newenvironment{notebox}{%
+  \begin{quote}\itshape\color{AccentColor}%
+}{%
+  \end{quote}%
+}
+
+\endinput
