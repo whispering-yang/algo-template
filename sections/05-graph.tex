@@ -276,6 +276,49 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 
 \lstinputlisting[language=C++]{codes/05-graph-05.cpp}
 
+\subsection{圆方树 (Block-Cut Tree / Round-Square Tree)}
+
+\textbf{用途：} 把无向图的每个点双连通分量缩成一个点，将一般图转化为树结构。原图的点对应\textbf{圆点}，每个点双新建一个\textbf{方点}，方点向该点双内的所有圆点连边。常用于处理「删点后连通性」「两点间所有路径的并」等图上问题。
+
+\subsubsection{核心概念}
+
+\begin{itemize}
+  \item 圆方树共有 $n + (\text{点双个数})$ 个节点：圆点编号 $1 \sim n$，方点编号 $n + 1 \sim \mathit{tot}$。
+  \item 割点属于多个点双，因此一个圆点会与多个方点相邻；非割点只属于一个点双。
+  \item 方点是虚点，只起中转作用，树上统计时通常只统计圆点。
+\end{itemize}
+
+\subsubsection{常用性质}
+
+\begin{itemize}
+  \item 删去圆点 $u$ 后原图的连通块划分 = 圆方树上删去 $u$ 后各连通分支内的圆点集合。
+  \item $u$ 到 $v$ 的\textbf{所有路径}经过的点集之并 = 圆方树上 $u \sim v$ 路径上的圆点集合（含端点）。
+  \item 因此 $u \sim v$ 树上路径中\textbf{非端点}的圆点恰为必经点。
+\end{itemize}
+
+\subsubsection{建树流程}
+
+\begin{enumerate}
+  \item 在 Tarjan 求点双的过程中，当 $\operatorname{low}[v] \ge \operatorname{dfn}[u]$ 时，栈中从 $v$ 往上的所有圆点与 $u$ 同属一个点双。
+  \item 此时新建一个方点，将弹出的圆点以及 $u$ 都与该方点连边。
+  \item 每个点双只建一个方点；割点 $u$ 会被多次连向不同方点。
+\end{enumerate}
+
+\begin{quote}
+\textbf{注意：} 更新 $\operatorname{low}$ 时不跳过父节点，重边会被正确识别为回边（两条平行边恰好构成一个 $\{u, v\}$ 点双）。孤立点不属于任何含边的点双，不会建方点，需要时单独特判。
+\end{quote}
+
+\subsubsection{时间复杂度}
+
+\begin{itemize}
+  \item \textbf{时间复杂度}：建树 $O(n + m)$。
+  \item \textbf{空间复杂度}：圆方树节点数不超过 $2n$，为 $O(n + m)$。
+\end{itemize}
+
+\subsubsection{代码模板}
+
+\lstinputlisting[language=C++]{codes/05-graph-12.cpp}
+
 \subsection{拓扑排序方案数 (Counting Linear Extensions)}
 
 已知一个长度为 $n$ 的序列（或 $n$ 个元素），并且给定了若干形如 $a_i < a_j$ 的大小关系，要求计算满足所有这些约束的排列总数。这在组合数学中称为\textbf{偏序集的线性扩展计数}，在算法竞赛中常称为\textbf{拓扑排序方案数}。

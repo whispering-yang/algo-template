@@ -11,6 +11,18 @@
 
 \lstinputlisting[language=C++]{codes/07-utilities-03.cpp}
 
+\subsection{Python 随机数生成}
+
+\textbf{用途：} 使用 \code{random} 标准库为对拍生成随机数据，或为随机化算法提供随机源。
+
+\begin{itemize}
+  \item \code{random.seed(x)}：固定随机种子，使生成结果可复现；不传参则由系统熵源自动播种。
+  \item \code{random} 模块是\textbf{确定性伪随机}（梅森旋转算法），输出序列可被预测；对抗 hack 的场景应改用 \code{random.SystemRandom()}。
+  \item 批量生成大量随机数时，\code{random.choices} / \code{random.sample} 由 C 实现，比循环调用 \code{randint} 快数倍。
+\end{itemize}
+
+\lstinputlisting[language=Python]{codes/07-utilities-09.py}
+
 \subsection{随机树图生成器}
 
 全随机树图：
