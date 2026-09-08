@@ -11,20 +11,3 @@
 \begin{quote}
   \textbf{注意：} 部分 OJ 会忽略 \code{\#pragma}（或要求指定编译选项），此时应改用 \code{-O2} / \code{-Ofast} / \code{-march=native} 编译；本地调试时建议不加优化指令，以免影响断点与变量查看。
 \end{quote}
-
-\subsection{常用优化技巧}
-
-\textbf{核心概念：}
-\begin{itemize}
-  \item \textbf{位运算}：乘除 2 的幂用移位；判断奇偶用 \code{\& 1}；取模用 \code{\& (mod-1)}（仅当模数为 2 的幂）。
-  \item \textbf{循环局部性}：二维数组按行访问，内层循环遍历连续内存，减少缓存未命中。
-  \item \textbf{预分配数组}：大数组开成全局变量（静态区），避免 \code{new}/\code{malloc} 与 \code{vector} 频繁扩容。
-  \item \textbf{避免动态内存}：优先用固定数组代替 \code{map}/\code{unordered\_map}，确需哈希时手写开放寻址哈希表。
-  \item \textbf{减少拷贝}：函数参数传 \code{const T\&}，容器传递用引用；返回值用移动语义或传输出参数。
-  \item \textbf{内联}：短小热路径函数加 \code{inline}，或直接写成宏/常量表达式（\code{constexpr}）。
-  \item \textbf{递归改迭代}：深递归易爆栈且函数调用开销大，可改显式栈或递推。
-  \item \textbf{预计算}：重复使用的值（如阶乘、逆元、前缀和）提前算好存入数组。
-  \item \textbf{分支优化}：把大概率成立的条件放前面；用查表法替代复杂 \code{if-else} 链。
-\end{itemize}
-
-\textbf{时间复杂度：} 常数优化不改变渐进复杂度，仅降低实际运行系数，通常可将常数压至 1/2 甚至更低。
