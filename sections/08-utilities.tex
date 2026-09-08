@@ -21,16 +21,6 @@
 
 \lstinputlisting[language=C++]{codes/08-utilities-03.cpp}
 
-\subsection{随机树图生成器}
-
-在基础随机数之上进一步生成\textbf{树与图等结构化数据}：全随机树用于一般测试，单链（深度为 $n$ 的链）专门用于卡递归爆栈、检验链上算法的最坏情形。生成时注意先随机父亲再连边，保证连通。
-
-全随机树图：
-\lstinputlisting[language=C++]{codes/08-utilities-04.cpp}
-
-生成单链：
-\lstinputlisting[language=C++]{codes/08-utilities-05.cpp}
-
 \subsection{Python 随机数生成}
 
 \textbf{用途：} 使用 \code{random} 标准库为对拍生成随机数据，或为随机化算法提供随机源。Python 写数据生成器比 C++ 更省事，适合规则复杂、规模不大的数据。
