@@ -1,5 +1,5 @@
 // =============================================================================
-// File:     06-math-02  — NTT (Number Theoretic Transform)
+// File:     07-math-02  — NTT (Number Theoretic Transform)
 // Style:     array-based, constexpr size, unified bit_reversal + ntt interface
 // =============================================================================
 

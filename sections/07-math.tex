@@ -25,7 +25,7 @@
 
 \textbf{时间复杂度：} 蝴蝶重排 $O(N)$，逐层合并共 $\log N$ 层，每层 $O(N)$，总复杂度 $O(N\log N)$。空间复杂度 $O(N)$。
 
-\lstinputlisting[language=C++]{codes/06-math-01.cpp}
+\lstinputlisting[language=C++]{codes/07-math-01.cpp}
 
 \textbf{说明：}
 \begin{itemize}
@@ -81,7 +81,7 @@ $\omega_n^{n/2} = -1$ & $e^{\pi i} = -1$ & $g^{(P-1)/2} \equiv -1$ \\
 
 \textbf{时间复杂度：} 与 FFT 相同，为 $O(N\log N)$，全部使用整数运算，没有浮点误差。
 
-\lstinputlisting[language=C++]{codes/06-math-02.cpp}
+\lstinputlisting[language=C++]{codes/07-math-02.cpp}
 
 \textbf{说明：}
 \begin{itemize}
@@ -113,7 +113,7 @@ $\omega_n^{n/2} = -1$ & $e^{\pi i} = -1$ & $g^{(P-1)/2} \equiv -1$ \\
 
 \textbf{时间复杂度：} 仍为 $O(N\log N)$；相比标准实现省去位逆序置换的 $O(N)$ 次跨步交换与 \code{rev} 数组开销，实际运行常数更小。
 
-\lstinputlisting[language=C++]{codes/06-math-16.cpp}
+\lstinputlisting[language=C++]{codes/07-math-16.cpp}
 
 \textbf{说明：}
 \begin{itemize}
@@ -144,7 +144,7 @@ FFT/NTT 不仅能计算多项式乘法，也能直接套用于\textbf{序列}的
     \item \textbf{共轭与翻转：} 频域相关定理 $R=\overline{\operatorname{DFT}(A)}\cdot\operatorname{DFT}(B)$ 仅适用于复数 FFT；NTT 模域没有共轭运算，一律用「翻转 $b$ 后卷积」实现，两者在代数上等价。
 \end{itemize}
 
-\lstinputlisting[language=C++]{codes/06-math-09.cpp}
+\lstinputlisting[language=C++]{codes/07-math-09.cpp}
 
 \subsection{生成函数 (Generating Functions)}
 
@@ -205,11 +205,11 @@ $S(n,k)$（固定 $k$） & $\dfrac{(e^x-1)^k}{k!}$ & 第二类斯特林数：$n$
 
 \textbf{时间复杂度：} 递推 $T(n)=T(n/2)+O(n\log n)=O(n\log n)$。空间复杂度 $O(n)$。
 
-\lstinputlisting[language=C++]{codes/06-math-10.cpp}
+\lstinputlisting[language=C++]{codes/07-math-10.cpp}
 
 \textbf{说明：}
 \begin{itemize}
-    \item 代码自包含（内嵌与 06-math-02 相同的 NTT），可整文件复制到比赛工程中使用。
+    \item 代码自包含（内嵌与 07-math-02 相同的 NTT），可整文件复制到比赛工程中使用。
     \item 若 $a_0 \equiv 0$ 则逆不存在，题面一般保证 $a_0 \ne 0$。
     \item 生成函数建模中「$\bmod\ x^n$」正对应「只看前 $n$ 项」，多项式求逆即该语义下的 $1/A$。
 \end{itemize}
@@ -229,7 +229,7 @@ $S(n,k)$（固定 $k$） & $\dfrac{(e^x-1)^k}{k!}$ & 第二类斯特林数：$n$
 
 \textbf{时间复杂度：} 每轮一次多项式求逆 + 一次乘法，$T(n)=T(n/2)+O(n\log n)=O(n\log n)$。
 
-\lstinputlisting[language=C++]{codes/06-math-11.cpp}
+\lstinputlisting[language=C++]{codes/07-math-11.cpp}
 
 \subsubsection{多项式对数与指数 (Polynomial ln / exp)}
 
@@ -248,7 +248,7 @@ $\ln A$ 与 $\exp A=\sum_{k\ge 0}\dfrac{A^k}{k!}$ 是 EGF 运算的核心：多�
 
 \textbf{时间复杂度：} $\ln$ 为一次求逆 + 一次乘法 $O(n\log n)$；\code{exp} 每轮一次 $\ln$ + 一次乘法，同样 $O(n\log n)$。
 
-\lstinputlisting[language=C++]{codes/06-math-12.cpp}
+\lstinputlisting[language=C++]{codes/07-math-12.cpp}
 
 \textbf{说明：}
 \begin{itemize}
@@ -274,7 +274,7 @@ $\ln A$ 与 $\exp A=\sum_{k\ge 0}\dfrac{A^k}{k!}$ 是 EGF 运算的核心：多�
 
 \textbf{时间复杂度：} 两次多项式乘法 + 一次多项式求逆，$O(n\log n)$。
 
-\lstinputlisting[language=C++]{codes/06-math-13.cpp}
+\lstinputlisting[language=C++]{codes/07-math-13.cpp}
 
 \subsection{矩阵与线性代数 (Matrix and Linear Algebra)}
 
@@ -293,7 +293,7 @@ $C_{i,j} = \sum_{k=0}^{m-1} A_{i,k} B_{k,j}$。
 
 \textbf{代码模板：}
 
-\lstinputlisting[language=C++]{codes/06-math-03.cpp}
+\lstinputlisting[language=C++]{codes/07-math-03.cpp}
 
 \subsubsection{矩阵快速幂 (Matrix Fast Power)}
 
@@ -311,7 +311,7 @@ $C_{i,j} = \sum_{k=0}^{m-1} A_{i,k} B_{k,j}$。
 
 \textbf{代码模板：}
 
-\lstinputlisting[language=C++]{codes/06-math-04.cpp}
+\lstinputlisting[language=C++]{codes/07-math-04.cpp}
 
 \subsubsection{高斯消元 (Gaussian Elimination)}
 
@@ -329,7 +329,7 @@ $C_{i,j} = \sum_{k=0}^{m-1} A_{i,k} B_{k,j}$。
 
 \textbf{代码模板：}
 
-\lstinputlisting[language=C++]{codes/06-math-05.cpp}
+\lstinputlisting[language=C++]{codes/07-math-05.cpp}
 
 \subsubsection{线性基 (Linear Basis)}
 
@@ -353,7 +353,7 @@ $C_{i,j} = \sum_{k=0}^{m-1} A_{i,k} B_{k,j}$。
     \item 合并两个线性基：$O(\log^2 V)$。
 \end{itemize}
 
-\lstinputlisting[language=C++]{codes/06-math-06.cpp}
+\lstinputlisting[language=C++]{codes/07-math-06.cpp}
 
 \textbf{说明：}
 \begin{itemize}
@@ -386,7 +386,7 @@ $C_{i,j} = \sum_{k=0}^{m-1} A_{i,k} B_{k,j}$。
 
 \textbf{时间复杂度：} $O(n \log \log n)$，空间复杂度 $O(n)$（使用 \texttt{bitset} 可压缩为 $O(n/8)$ 字节）。
 
-\lstinputlisting[language=C++]{codes/06-math-07.cpp}
+\lstinputlisting[language=C++]{codes/07-math-07.cpp}
 
 \textbf{说明：}
 \begin{itemize}
@@ -413,7 +413,7 @@ $C_{i,j} = \sum_{k=0}^{m-1} A_{i,k} B_{k,j}$。
 
 \textbf{时间复杂度：} 与普通欧几里得算法相同，为 $O(\log \min(a, b))$。
 
-\lstinputlisting[language=C++]{codes/06-math-19.cpp}
+\lstinputlisting[language=C++]{codes/07-math-19.cpp}
 
 \begin{quote}
 \textbf{注意：} 递归求出的特解满足 $|x| \le \dfrac{b}{g}$，$|y| \le \dfrac{a}{g}$，本身不会溢出；但特解参与「先乘后取模」的运算时仍需 \code{\_\_int128} 或先取模防溢出。
@@ -448,7 +448,7 @@ $C_{i,j} = \sum_{k=0}^{m-1} A_{i,k} B_{k,j}$。
 
 \textbf{时间复杂度：} $O(\sqrt{n})$。
 
-\lstinputlisting[language=C++]{codes/06-math-17.cpp}
+\lstinputlisting[language=C++]{codes/07-math-17.cpp}
 
 \begin{quote}
 \textbf{注意：} 累乘必须写成 \code{result = result / p * (p - 1)}，先除后乘；写成 \code{result * (p - 1) / p} 会因中间结果过大而溢出。
@@ -468,7 +468,7 @@ $C_{i,j} = \sum_{k=0}^{m-1} A_{i,k} B_{k,j}$。
 
 \textbf{时间复杂度：} 严格 $O(n)$，空间复杂度 $O(n)$。
 
-\lstinputlisting[language=C++]{codes/06-math-18.cpp}
+\lstinputlisting[language=C++]{codes/07-math-18.cpp}
 
 \subsubsection{欧拉定理与费马小定理 (Euler's Theorem and Fermat's Little Theorem)}
 
@@ -503,6 +503,81 @@ a^{\varphi(m)} \equiv 1 \pmod{m}
     \item 降幂加 $\varphi(m)$ 的前提是 $b \ge \varphi(m)$，指数读入为字符串时必须同时维护大小关系，不能只取模。
 \end{itemize}
 
+\subsection{阶与原根 (Multiplicative Order and Primitive Root)}
+
+\subsubsection{阶 (Multiplicative Order)}
+
+\textbf{用途：}
+阶刻画了模意义下幂运算的循环节长度，是判定原根、构造离散对数（BSGS）以及分析循环群结构的基础。
+
+\textbf{定义：} $\gcd(a, m) = 1$ 时，使
+\[
+a^{k} \equiv 1 \pmod{m}
+\]
+成立的\textbf{最小正整数} $k$ 称为 $a$ 模 $m$ 的阶，记作 $\operatorname{ord}_m(a)$。
+
+\textbf{核心性质：}
+\begin{itemize}
+    \item \textbf{整除性：} $\operatorname{ord}_m(a) \mid \varphi(m)$，即欧拉定理的直接推论（幂序列的循环节长度不超过 $\varphi(m)$）。
+    \item \textbf{等价判定：} $a^{k} \equiv 1 \pmod{m} \iff \operatorname{ord}_m(a) \mid k$。因此判断 $a$ 的幂是否回到 $1$，只需检查阶的约数。
+    \item \textbf{互不相同：} $0, 1, \dots, \operatorname{ord}_m(a)-1$ 使 $a^0, a^1, \dots, a^{\operatorname{ord}-1}$ 两两不同，之后循环。
+\end{itemize}
+
+\textbf{求阶算法：} 由整除性，阶必为 $\varphi(m)$ 的约数。先求 $\varphi(m)$ 并分解质因数，令 $x = \varphi(m)$，对每个质因子 $p$ 反复试除：若 $p \mid x$ 且 $a^{x/p} \equiv 1 \pmod{m}$，则 $x \gets x/p$；无法继续缩小即得最小阶。
+
+\textbf{时间复杂度：} 试除分解 $O(\sqrt{m})$，求阶本身只需 $O(\omega \log m \cdot \log m)$ 次运算（$\omega$ 为 $\varphi(m)$ 的质因子个数，不超过 $6 \sim 7$）。
+
+\subsubsection{原根 (Primitive Root)}
+
+\textbf{定义：} 若 $\operatorname{ord}_m(g) = \varphi(m)$，则称 $g$ 为模 $m$ 的\textbf{原根} (Primitive Root)。此时 $g^0, g^1, \dots, g^{\varphi(m)-1}$ 取遍模 $m$ 的全部与 $m$ 互质的剩余类——原根生成整个缩系。
+
+\textbf{存在性定理：} 模 $m$ 存在原根 $\iff m \in \{1,\ 2,\ 4,\ p^{e},\ 2p^{e}\}$（$p$ 为奇素数）。特别地，\textbf{素数模一定有原根}；若 $m$ 有原根，则原根恰有 $\varphi(\varphi(m))$ 个。
+
+\textbf{判定方法：} $g$ 是模 $m$ 的原根 $\iff \gcd(g, m) = 1$ 且对 $\varphi(m)$ 的\textbf{每个质因子} $q$，$g^{\varphi(m)/q} \not\equiv 1 \pmod{m}$。（若 $g$ 的阶不是 $\varphi(m)$，则阶必为某个 $\varphi(m)/q$ 的约数，该检查恰好把所有情形排除。）
+
+\textbf{求最小原根：} 从 $g = 2$ 起依次用上述判定检验，第一个通过的就是最小原根。经验上素数模的最小原根通常不超过 $100$（如 $998244353$ 的最小原根为 $3$），枚举量极少。
+
+\textbf{应用：} NTT 模数取单位根（$\omega_n = g^{(P-1)/n}$）、离散对数问题、指标映射与随机化哈希等。
+
+\textbf{时间复杂度：} 单次判定 $O(\omega \log^2 m)$；求最小原根再乘以枚举个数（实际为小常数）。
+
+\lstinputlisting[language=C++]{codes/07-math-20.cpp}
+
+\begin{quote}
+\textbf{注意：} 常用 NTT 模数的原根无需现算：$998244353$、$1004535809$、$469762049$ 的最小原根均为 $3$，可直接使用。
+\end{quote}
+
+\subsection{大步小步算法 BSGS (Baby-Step Giant-Step)}
+
+\textbf{用途：}
+求解\textbf{离散对数}问题：给定 $a, b, m$，求最小非负整数 $x$ 使得 $a^{x} \equiv b \pmod{m}$；无解返回 $-1$。要求 $\gcd(a, m) = 1$，不互质的情形需用扩展 BSGS (exBSGS)。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item \textbf{分块：} 令 $t = \lceil \sqrt{m} \rceil$。由 $\gcd(a, m)=1$ 知 $a$ 的阶不超过 $\varphi(m) < m \le t^2$，故解若存在必可写成 $x = i \cdot t - j$，其中大步 $i \in [1, t]$，小步 $j \in [0, t)$。
+  \item \textbf{变形消去除法：} $a^{it} \equiv b \cdot a^{j}$——同余式两边同乘 $a^j$ 后移项，避免求逆元，也无需逐个比较。
+  \item \textbf{小步建表：} 枚举 $j$，把 $b \cdot a^j \bmod m$ 存入哈希表；重复的值保留\textbf{更大}的 $j$，使同一大步下解最小。
+  \item \textbf{大步查表：} 枚举 $i$，计算 $a^{it} \bmod m$（每次乘一步长 $a^t$），命中哈希表即得 $x = i \cdot t - j$；枚举顺序保证返回最小非负解。
+\end{itemize}
+
+\textbf{算法流程：}
+
+\begin{enumerate}
+  \item 特判 $m = 1$ 或 $b \equiv 1 \pmod m$，答案为 $0$。
+  \item 求 $t = \lceil \sqrt{m} \rceil$，小步枚举 $j = 0 \dots t-1$，哈希表存 $(b \cdot a^j, j)$。
+  \item 计算 $a^t$；大步枚举 $i = 1 \dots t$，维护 $cur = a^{it} \bmod m$，查表命中则返回 $i \cdot t - \mathit{bs}[cur]$。
+  \item 全部枚举完仍未命中，返回 $-1$。
+\end{enumerate}
+
+\textbf{时间复杂度：} $O(\sqrt{m})$ 次乘法与哈希操作，空间复杂度 $O(\sqrt{m})$。
+
+\lstinputlisting[language=C++]{codes/07-math-21.cpp}
+
+\begin{quote}
+\textbf{注意：} 哈希表可直接用 \code{unordered\_map}（均摊 $O(1)$）；被卡常时可手写开放寻址哈希或对结果 \code{sort} 后二分。若 $\gcd(a, m) \ne 1$，本模板结论不可靠，必须先约去公因子（exBSGS）。
+\end{quote}
+
 \subsection{博弈论 (Game Theory)}
 
 \subsubsection{Nim 游戏与 SG 函数 (Nim Game and Sprague--Grundy Theorem)}
@@ -530,7 +605,7 @@ a^{\varphi(m)} \equiv 1 \pmod{m}
 
 \textbf{时间复杂度：} 记忆化搜索 $O(\text{状态数}+\text{边数})$（mex 排序均摊近似线性）；Nim 判定 $O(n)$。
 
-\lstinputlisting[language=C++]{codes/06-math-14.cpp}
+\lstinputlisting[language=C++]{codes/07-math-14.cpp}
 
 \textbf{说明：}
 \begin{itemize}
@@ -565,4 +640,4 @@ Anti-Nim & 与 Nim 相同，但\textbf{取走最后一颗者输} & 全 $1$ 且�
     \item 以上结论均可用 SG 函数暴力验证小规模数据后再套用，防止记忆偏差。
 \end{itemize}
 
-\lstinputlisting[language=C++]{codes/06-math-15.cpp}
+\lstinputlisting[language=C++]{codes/07-math-15.cpp}

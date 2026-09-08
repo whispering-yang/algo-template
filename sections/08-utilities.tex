@@ -1,0 +1,63 @@
+\section{实用工具}
+
+本章按比赛/训练的完整工作流组织：\textbf{编译}代码 $\to$ \textbf{计时}评估性能 $\to$ \textbf{生成测试数据}（先基础随机数据，再树/图等结构化数据，最后是 Python 方案）$\to$ \textbf{对拍}验证正确性。各节由前到后依次衔接，按需取用。
+
+\subsection{Windows 自动编译器}
+
+\lstinputlisting[language=bash]{codes/08-utilities-01.bat}
+
+\textbf{使用方法}
+\lstinputlisting[language=bash]{codes/08-utilities-02.bat}
+
+\subsection{计时器}
+
+利用 \code{std::chrono} 的 RAII 计时对象：构造时开始计时，作用域结束时自动输出耗时（毫秒）。配合上一节的编译器使用，可在本地快速评估程序实际运行时间；在 \code{main} 开头声明一个 \code{Timer} 即可测得整体耗时。
+
+\lstinputlisting[language=C++]{codes/08-utilities-06.cpp}
+
+\subsection{随机数生成器}
+
+生成对拍所需的\textbf{基础随机数据}。C++11 起推荐使用 \code{mt19937}（梅森旋转引擎），比 \code{rand()} 周期长、分布均匀，且支持任意范围的均匀整数分布。
+
+\lstinputlisting[language=C++]{codes/08-utilities-03.cpp}
+
+\subsection{随机树图生成器}
+
+在基础随机数之上进一步生成\textbf{树与图等结构化数据}：全随机树用于一般测试，单链（深度为 $n$ 的链）专门用于卡递归爆栈、检验链上算法的最坏情形。生成时注意先随机父亲再连边，保证连通。
+
+全随机树图：
+\lstinputlisting[language=C++]{codes/08-utilities-04.cpp}
+
+生成单链：
+\lstinputlisting[language=C++]{codes/08-utilities-05.cpp}
+
+\subsection{Python 随机数生成}
+
+\textbf{用途：} 使用 \code{random} 标准库为对拍生成随机数据，或为随机化算法提供随机源。Python 写数据生成器比 C++ 更省事，适合规则复杂、规模不大的数据。
+
+\begin{itemize}
+  \item \code{random.seed(x)}：固定随机种子，使生成结果可复现；不传参则由系统熵源自动播种。
+  \item \code{random} 模块是\textbf{确定性伪随机}（梅森旋转算法），输出序列可被预测；对抗 hack 的场景应改用 \code{random.SystemRandom()}。
+  \item 批量生成大量随机数时，\code{random.choices} / \code{random.sample} 由 C 实现，比循环调用 \code{randint} 快数倍。
+\end{itemize}
+
+\lstinputlisting[language=Python]{codes/08-utilities-09.py}
+
+\subsection{单文件对拍}
+
+数据准备好后，用对拍验证正确性：把待测程序写成下面的 \code{Solution} 骨架，核心逻辑集中在 \code{solve()} 中，便于与暴力程序批量比对输出。
+
+\lstinputlisting[language=C++]{codes/08-utilities-07.cpp}
+
+\subsection{Python 对拍器}
+
+批量对拍两个程序的输出，需要准备三个可执行文件：
+\begin{itemize}
+    \item \code{gen}：随机数据生成器（可用本章前几节的生成器编译而来）
+    \item \code{my}：你的待测程序
+    \item \code{std}：标准/暴力程序
+\end{itemize}
+
+脚本循环生成数据、分别运行两个程序并比对输出，遇到不一致即停止并保存出错的测试数据。
+
+\lstinputlisting[language=Python]{codes/08-utilities-08.py}

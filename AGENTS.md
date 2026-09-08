@@ -17,19 +17,20 @@
 │   ├── 01-stdlib-01.cpp
 │   ├── 02-datastructures-01.cpp   # 并查集(数组)
 │   ├── 02-datastructures-02.cpp   # 并查集(map)
-│   ├── ...                        # 共 24 个代码文件
-│   └── 09-debug-01.sh
+│   ├── ...                        # 命名规则：NN-topic-序号.后缀，NN 与所属章节文件编号一致
+│   └── 10-optimization-01.cpp
 │
 └── sections/                     # 按主题拆分的子文档（每个文件对应一个 section）
     ├── 01-stdlib.tex             # 标准库方法
     ├── 02-datastructures.tex     # 数据结构
-    ├── 03-strings.tex            # 字符串
-    ├── 04-geometry.tex           # 计算几何
-    ├── 05-graph.tex              # 图论
-    ├── 06-math.tex               # 数学
-    ├── 07-utilities.tex          # 实用工具
-    ├── 08-language.tex           # 语言特性
-    └── 09-debug.tex              # 本地调试
+    ├── 03-sorting.tex            # 排序与分治
+    ├── 04-strings.tex            # 字符串
+    ├── 05-geometry.tex           # 计算几何
+    ├── 06-graph.tex              # 图论
+    ├── 07-math.tex               # 数学
+    ├── 08-utilities.tex          # 实用工具
+    ├── 09-debug.tex              # 本地调试
+    └── 10-optimization.tex       # 常数优化
 ```
 
 ## 编译命令

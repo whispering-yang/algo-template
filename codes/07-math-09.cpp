@@ -1,13 +1,13 @@
 // =============================================================================
-// File:     06-math-09 — Convolution & Correlation (卷积与相关)
-// Style:    精简版 — 假设 fpow / bit_reversal / ntt 已实现 (见 codes/06-math-02.cpp),
+// File:     07-math-09 — Convolution & Correlation (卷积与相关)
+// Style:    精简版 — 假设 fpow / bit_reversal / ntt 已实现 (见 codes/07-math-02.cpp),
 //           此处仅保留卷积与相关的核心封装; 需要 C++20 (std::bit_ceil)
 // =============================================================================
 
 #include <bits/stdc++.h>
 using namespace std;
 
-// -------- 依赖外部 NTT 模板 (见 codes/06-math-02.cpp) --------
+// -------- 依赖外部 NTT 模板 (见 codes/07-math-02.cpp) --------
 constexpr int64_t MOD = 998244353;   // 质数模数, 原根为 3
 constexpr int64_t G = 3;             // 原根
 int64_t fpow(int64_t a, int64_t b);

@@ -1,5 +1,5 @@
 // =============================================================================
-// File:     06-math-16  — NTT without bit-reversal (DIF + DIT)
+// File:     07-math-16  — NTT without bit-reversal (DIF + DIT)
 // Style:    forward = decimation-in-frequency (natural -> bit-reversed)
 //           inverse = decimation-in-time (bit-reversed -> natural)
 // =============================================================================

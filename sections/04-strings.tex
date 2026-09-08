@@ -22,7 +22,7 @@
 \textbf{时间复杂度分析：}
 设模式串长度为 $m = |P|$，文本串长度为 $n = |T|$。构造 $s$ 后只需一次遍历，指针 $j$ 每次最多增加 $1$，总共增加不超过 $n+m+1$ 次；每次回退至少减少 $1$，总回退次数也不超过 $n+m+1$。整体时间复杂度为 $O(n + m)$，空间复杂度为 $O(n + m)$。
 
-\lstinputlisting[language=C++]{codes/03-strings-01.cpp}
+\lstinputlisting[language=C++]{codes/04-strings-01.cpp}
 
 \subsection{AC自动机 (Aho-Corasick Automaton)}
 
@@ -54,7 +54,7 @@
 \end{itemize}
 因此整体时间复杂度为 $O(N + M)$，即与输入规模成线性关系。
 
-\lstinputlisting[language=C++]{codes/03-strings-02.cpp}
+\lstinputlisting[language=C++]{codes/04-strings-02.cpp}
 
 \subsection{后缀自动机 (Suffix Automaton, SAM)}
 
@@ -94,7 +94,7 @@
 给定一个长度为 $n$ 的字符串 $S$ ，求 $S$ 中本质不同的子串个数。
 本质不同的子串指内容不同的子串，相同内容的子串只计一次。
 
-\lstinputlisting[language=C++]{codes/03-strings-03.cpp}
+\lstinputlisting[language=C++]{codes/04-strings-03.cpp}
 
 \subsubsection{子串出现次数 (endpos 大小统计)}
 
@@ -112,7 +112,7 @@
 
 \textbf{例题：} P3804 【模板】后缀自动机——求所有出现次数大于 $1$ 的子串中，出现次数乘以子串长度的最大值。
 
-\lstinputlisting[language=C++]{codes/03-strings-04.cpp}
+\lstinputlisting[language=C++]{codes/04-strings-04.cpp}
 
 \subsubsection{最长公共子串 (Longest Common Substring)}
 
@@ -132,7 +132,7 @@
 
 \textbf{例题：} SP1811 LCS——求两个字符串的最长公共子串长度。
 
-\lstinputlisting[language=C++]{codes/03-strings-05.cpp}
+\lstinputlisting[language=C++]{codes/04-strings-05.cpp}
 
 \subsubsection{字典序第 k 小子串}
 
@@ -159,7 +159,7 @@
 
 \textbf{例题：} P3975 [TJOI2015] 弦论——$t=0$ 时求本质不同子串中第 $k$ 小，$t=1$ 时求所有子串（相同子串按出现次数计）中第 $k$ 小。
 
-\lstinputlisting[language=C++]{codes/03-strings-06.cpp}
+\lstinputlisting[language=C++]{codes/04-strings-06.cpp}
 
 \subsubsection{其他常见应用}
 
@@ -212,4 +212,4 @@
 
 \textbf{例题：} P6139 【模板】广义后缀自动机——给定 $n$ 个字符串，输出所有串本质不同的子串个数与广义 SAM 的状态数。
 
-\lstinputlisting[language=C++]{codes/03-strings-07.cpp}
+\lstinputlisting[language=C++]{codes/04-strings-07.cpp}

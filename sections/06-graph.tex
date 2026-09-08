@@ -18,7 +18,7 @@
 
 基于父节点 $dfn$ 序号一定比子节点小的结论，可以推断出 $u$ 和 $v$ 的最近公共祖先的 $dfn$ 序号一定比 $u$ 和 $v$ 的序号小。因此，可以初始化 ST 表的第一层，以 $dfn$ 序号为下标，每个元素值为对应节点的父节点编号；更新 ST 表的每一层时，比较前一层两个节点的 $dfn$ 值大小，将后一层的值更新为前一层两个节点中 $dfn$ 值较小的节点编号。这样，使用一次 ST 表的区间查询得到的结果就是 $\operatorname{LCA}$ 的答案。
 
-\lstinputlisting[language=C++]{codes/05-graph-01.cpp}
+\lstinputlisting[language=C++]{codes/06-graph-01.cpp}
 
 \subsubsection{树上倍增法求 LCA}
 
@@ -40,7 +40,7 @@
 
 \textbf{时间复杂度：} 预处理 $O(n \log n)$，单次查询 $O(\log n)$。
 
-\lstinputlisting[language=C++]{codes/05-graph-06.cpp}
+\lstinputlisting[language=C++]{codes/06-graph-06.cpp}
 
 \subsection{Dijkstra 算法（单源最短路）}
 
@@ -69,7 +69,7 @@
 \textbf{注意：} Dijkstra 仅适用于边权非负的图。图中含负权边时必须改用 Bellman-Ford 或 SPFA。
 \end{quote}
 
-\lstinputlisting[language=C++]{codes/05-graph-10.cpp}
+\lstinputlisting[language=C++]{codes/06-graph-10.cpp}
 
 \subsection{Floyd-Warshall 算法（全源最短路）}
 
@@ -85,7 +85,7 @@
 
 \textbf{时间复杂度：} $O(n^3)$，空间复杂度 $O(n^2)$，适合 $n \le 500$ 左右的稠密图。
 
-\lstinputlisting[language=C++]{codes/05-graph-11.cpp}
+\lstinputlisting[language=C++]{codes/06-graph-11.cpp}
 
 \subsection{强连通分量 Tarjan}
 
@@ -125,7 +125,7 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 
 \subsubsection{代码模板}
 
-\lstinputlisting[language=C++]{codes/05-graph-02.cpp}
+\lstinputlisting[language=C++]{codes/06-graph-02.cpp}
 
 \subsection{2-SAT (2-Satisfiability)}
 
@@ -170,7 +170,7 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 
 约定：变量编号 $1 \sim n$；\code{add\_clause(x, a, y, b)} 表示添加子句 $(x = a) \lor (y = b)$，其中 $a, b \in \{0, 1\}$。
 
-\lstinputlisting[language=C++]{codes/05-graph-09.cpp}
+\lstinputlisting[language=C++]{codes/06-graph-09.cpp}
 
 \subsection{割点与桥}
 
@@ -230,7 +230,7 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 
 \subsubsection{代码模板}
 
-\lstinputlisting[language=C++]{codes/05-graph-03.cpp}
+\lstinputlisting[language=C++]{codes/06-graph-03.cpp}
 
 \subsection{点双连通分量 (Biconnected Component, BCC)}
 
@@ -252,7 +252,7 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 
 \subsubsection{代码模板}
 
-\lstinputlisting[language=C++]{codes/05-graph-04.cpp}
+\lstinputlisting[language=C++]{codes/06-graph-04.cpp}
 
 \subsection{边双连通分量 (Bridge-connected Component, E-BCC)}
 
@@ -274,7 +274,7 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 
 \subsubsection{代码模板}
 
-\lstinputlisting[language=C++]{codes/05-graph-05.cpp}
+\lstinputlisting[language=C++]{codes/06-graph-05.cpp}
 
 \subsection{圆方树 (Block-Cut Tree / Round-Square Tree)}
 
@@ -317,7 +317,32 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 
 \subsubsection{代码模板}
 
-\lstinputlisting[language=C++]{codes/05-graph-12.cpp}
+\lstinputlisting[language=C++]{codes/06-graph-12.cpp}
+
+\subsection{拓扑排序与判环 Kahn (Topological Sort / Cycle Detection)}
+
+\textbf{用途：} 求有向无环图 (Directed Acyclic Graph, DAG) 的一个拓扑序；同时，若图中存在环则拓扑排序无法完成，因此它也是\textbf{有向图判环}的标准方法。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item \textbf{入度思想：} 拓扑序中某节点能被输出，当且仅当它的所有前驱都已输出，等价于其入度被减为 $0$。
+  \item \textbf{删边过程：} 每取出一个入度为 $0$ 的节点，就删除它的所有出边，令后继入度减 $1$；减到 $0$ 的后继随即入队。
+  \item \textbf{判环：} 环上的节点入度永远无法归零。若最终输出的节点数小于 $n$，则图中存在环（剩余节点即环本身及其下游）。
+\end{itemize}
+
+\textbf{算法流程：}
+
+\begin{enumerate}
+  \item 建图并统计每个节点的入度，将所有入度为 $0$ 的节点入队。
+  \item 取出队首 $u$ 并加入拓扑序，遍历其出边 $(u, v)$，将 $\mathit{indeg}[v]$ 减 $1$。
+  \item 若 $\mathit{indeg}[v] = 0$，将 $v$ 入队。
+  \item 队列为空后，比较已输出节点数与 $n$：相等则得到拓扑序，否则图中有环。
+\end{enumerate}
+
+\textbf{时间复杂度：} $O(n + m)$，每个点、每条边各处理一次。若需要\textbf{字典序最小}的拓扑序，把普通队列换成小根堆（优先队列），复杂度为 $O((n + m) \log n)$。
+
+\lstinputlisting[language=C++]{codes/06-graph-13.cpp}
 
 \subsection{拓扑排序方案数 (Counting Linear Extensions)}
 
@@ -347,7 +372,7 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 
 \textbf{时间复杂度：} $O(n \cdot 2^n)$，$n \le 20$ 时可行。
 
-\lstinputlisting[language=C++]{codes/05-graph-07.cpp}
+\lstinputlisting[language=C++]{codes/06-graph-07.cpp}
 
 \subsubsection{树形偏序计数}
 
@@ -363,4 +388,4 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 
 \textbf{时间复杂度：} 一次 DFS 求 $sz[u]$，$O(n)$，可处理 $n$ 达 $10^5$ 以上的规模。
 
-\lstinputlisting[language=C++]{codes/05-graph-08.cpp}
+\lstinputlisting[language=C++]{codes/06-graph-08.cpp}

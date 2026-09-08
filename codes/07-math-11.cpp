@@ -1,6 +1,6 @@
 // =============================================================================
-// File:     06-math-11  — Polynomial Square Root (多项式开方, Newton 迭代)
-// Style:    自包含模板: 内嵌 NTT (同 06-math-02) + poly_mul / poly_inv, 模数 998244353
+// File:     07-math-11  — Polynomial Square Root (多项式开方, Newton 迭代)
+// Style:    自包含模板: 内嵌 NTT (同 07-math-02) + poly_mul / poly_inv, 模数 998244353
 // =============================================================================
 
 #include <bits/stdc++.h>
@@ -70,7 +70,7 @@ vector<int64_t> poly_mul(vector<int64_t> a, vector<int64_t> b) {
     return a;
 }
 
-// 多项式求逆 (Newton 迭代, 详见 06-math-10)
+// 多项式求逆 (Newton 迭代, 详见 07-math-10)
 vector<int64_t> poly_inv(const vector<int64_t> &a, int n) {
     vector<int64_t> b{fpow(a[0], MOD - 2)};
     int k = 1;

@@ -31,40 +31,6 @@
 
 \lstinputlisting[language=C++]{codes/02-datastructures-04.cpp}
 
-\subsection{树状数组求逆序对 (Inversion Count by Fenwick Tree)}
-
-\textbf{用途：}
-求序列中满足 $i < j$ 且 $a_i > a_j$ 的二元组 $(i, j)$ 个数，即逆序对数量。从右往左扫描序列，树状数组维护「已出现过的值」的个数，对每个元素累加右侧比它小的元素个数。
-
-\textbf{核心概念：}
-\begin{itemize}
-  \item \textbf{离散化：} 值域可能很大（如 $10^9$）或含负数，先把所有值排序去重，映射到 $1 \sim n$ 的排名，再以排名为下标使用树状数组。
-  \item \textbf{单点加与前缀和：} \code{modify(rk[i])} 将当前值的计数加一；\code{query(rk[i] - 1)} 求严格小于 $a_i$ 的元素个数，恰好排除相等的元素（相等不计入逆序对）。
-  \item \textbf{对偶思路：} 也可从左往右扫描，累加「已插入元素中大于 $a_i$ 的个数」，即 $\text{query}(n) - \text{query}(rk_i)$。
-  \item \textbf{溢出提醒：} 逆序对最多 $\dfrac{n(n-1)}{2}$，须用 \code{long long} 计数。
-\end{itemize}
-
-\textbf{时间复杂度：} 离散化与扫描均为 $O(n \log n)$，空间复杂度 $O(n)$。
-
-\lstinputlisting[language=C++]{codes/02-datastructures-12.cpp}
-
-\subsection{归并排序求逆序对 (Inversion Count by Merge Sort)}
-
-\textbf{用途：}
-同样求逆序对数量。借助归并排序的分治结构，在合并两个有序段的同时统计跨越左右的逆序对，无需离散化。
-
-\textbf{核心概念：}
-\begin{itemize}
-  \item \textbf{分治计数：} 逆序对按位置分三类：都在左半段、都在右半段、跨越左右。前两类在递归求解子问题时自动统计，第三类在合并时统计。
-  \item \textbf{合并时计数：} 左右两段各自有序，当需要取出右段元素 $a_j$ 时，左段剩余元素 $a_i \sim a_{\text{mid}}$ 全部大于 $a_j$，一次性贡献 $\text{mid} - i + 1$ 对。
-  \item \textbf{稳定性：} 相等时优先取左段（比较用 $a_i \le a_j$），保证相等元素不计入逆序对，排序结果也保持稳定。
-  \item \textbf{溢出提醒：} 逆序对最多 $\dfrac{n(n-1)}{2}$，须用 \code{long long} 计数。
-\end{itemize}
-
-\textbf{时间复杂度：} $O(n \log n)$，空间复杂度 $O(n)$。
-
-\lstinputlisting[language=C++]{codes/02-datastructures-11.cpp}
-
 \subsection{线段树 (Segment Tree)}
 
 \textbf{用途：}

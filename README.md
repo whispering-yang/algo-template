@@ -12,13 +12,14 @@
 └── sections/       # 按主题拆分的章节
     ├── 01-stdlib.tex          # 标准库方法
     ├── 02-datastructures.tex  # 数据结构
-    ├── 03-strings.tex         # 字符串
-    ├── 04-geometry.tex        # 计算几何
-    ├── 05-graph.tex           # 图论
-    ├── 06-math.tex            # 数学
-    ├── 07-utilities.tex       # 实用工具
-    ├── 08-language.tex        # 语言特性
-    └── 09-debug.tex           # 本地调试
+    ├── 03-sorting.tex         # 排序与分治
+    ├── 04-strings.tex         # 字符串
+    ├── 05-geometry.tex        # 计算几何
+    ├── 06-graph.tex           # 图论
+    ├── 07-math.tex            # 数学
+    ├── 08-utilities.tex       # 实用工具
+    ├── 09-debug.tex           # 本地调试
+    └── 10-optimization.tex    # 常数优化
 ```
 
 ## 编译
