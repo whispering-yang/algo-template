@@ -578,6 +578,41 @@ a^{k} \equiv 1 \pmod{m}
 \textbf{注意：} 哈希表可直接用 \code{unordered\_map}（均摊 $O(1)$）；被卡常时可手写开放寻址哈希或对结果 \code{sort} 后二分。若 $\gcd(a, m) \ne 1$，本模板结论不可靠，必须先约去公因子（exBSGS）。
 \end{quote}
 
+\subsection{扩展大步小步算法 exBSGS (Extended BSGS)}
+
+\textbf{用途：}
+求解\textbf{不要求互质}情形的离散对数：给定 $a, b, m$，求最小非负整数 $x$ 使得 $a^{x} \equiv b \pmod{m}$；无解返回 $-1$。普通 BSGS 需要 $\gcd(a, m) = 1$，exBSGS 通过不断约去 $a$ 与 $m$ 的公因子，把一般情形化归为互质情形。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item \textbf{可解性：} 设 $g = \gcd(a, m) > 1$。若解存在，则 $g \mid a^{x}$ 且 $g \mid m$，从而必有 $g \mid b$；否则无解。
+  \item \textbf{约去公因子：} 由 $g \mid a^{x} - b$，把同余式两边与模数同除以 $g$：
+  \[ a^{x-1} \cdot \frac{a}{g} \;\equiv\; \frac{b}{g} \pmod{\tfrac{m}{g}}. \]
+  每约一步，方程左侧多出一个已知系数。重复约去，直到 $\gcd(a, m) = 1$；由于每步 $m$ 至少减半，约分至多 $O(\log m)$ 步。
+  \item \textbf{累积系数：} 设共约去 $cnt$ 步，累积系数 $d = \prod_k \frac{a}{g_k} \bmod m$，则原方程等价于
+  \[ a^{\,x - cnt} \cdot d \;\equiv\; b \pmod{m}. \]
+  注意每步的 $\frac{a}{g_k}$ 与约分后的模数互质，故 $\gcd(d, m) = 1$，$d$ 存在逆元。
+  \item \textbf{回代求解：} 方程化为 $a^{y} \equiv b \cdot d^{-1} \pmod{m}$，其中 $y = x - cnt \ge 0$；用普通 BSGS 求出最小 $y$，答案即 $y + cnt$。
+  \item \textbf{提前命中：} 若某步约分后恰好 $d = b$，则 $x = cnt$ 即为解，直接返回。事实上若 $[1, cnt]$ 内存在解，则第 $x$ 步约分后必有 $d = b$，故提前返回恰好取到最小解，不会漏掉更小的 $x$。
+\end{itemize}
+
+\textbf{算法流程：}
+
+\begin{enumerate}
+  \item 特判 $m = 1$ 或 $b \equiv 1 \pmod m$，答案为 $0$。
+  \item 取 $g = \gcd(a, m)$：若 $g = 1$ 转步骤 3；若 $g \nmid b$ 返回 $-1$；否则 $b$ 与 $m$ 同除以 $g$，$d$ 乘上 $a/g$（对 $m$ 取模），$cnt$ 加一；若 $d = b$ 返回 $cnt$，否则重复本步。
+  \item 用扩展欧几里得求 $d^{-1} \bmod m$，对 $a^{y} \equiv b \cdot d^{-1} \pmod{m}$ 跑普通 BSGS 得 $y$；$y = -1$ 则无解，否则返回 $y + cnt$。
+\end{enumerate}
+
+\textbf{时间复杂度：} 约去公因子至多 $O(\log m)$ 步（每步一次 gcd），主体仍为 $O(\sqrt{m})$ 次乘法与哈希操作，空间复杂度 $O(\sqrt{m})$。
+
+\lstinputlisting[language=C++]{codes/07-math-22.cpp}
+
+\begin{quote}
+\textbf{注意：} $b \equiv 0 \pmod m$（即 $a^{x} \equiv 0$）的情形无需特判，约分过程会自动处理，如 $2^{x} \equiv 0 \pmod 8$ 得 $x = 3$。求最小解时「$d = b$ 即返回 $cnt$」的检查不可省略，否则会漏掉小于 $cnt$ 的解。
+\end{quote}
+
 \subsection{博弈论 (Game Theory)}
 
 \subsubsection{Nim 游戏与 SG 函数 (Nim Game and Sprague--Grundy Theorem)}

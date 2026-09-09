@@ -11,11 +11,10 @@
 
 #include <bits/stdc++.h>
 using namespace std;
-typedef long long ll;
 
 // 快速幂：a^b mod m
-ll fpow(ll a, ll b, ll m) {
-    ll res = 1;
+int64_t fpow(int64_t a, int64_t b, int64_t m) {
+    int64_t res = 1;
     a %= m;
     while (b > 0) {
         if (b & 1) res = res * a % m;
@@ -26,21 +25,21 @@ ll fpow(ll a, ll b, ll m) {
 }
 
 // a ^ x ≡ b (mod m)：返回最小非负解 x，无解返回 -1
-ll bsgs(ll a, ll b, ll m) {
+int64_t bsgs(int64_t a, int64_t b, int64_t m) {
     a %= m, b %= m;
-    if (m == 1LL) return 0LL;       // 模 1 下任何数同余于 0，x = 0 即解
-    if (b == 1LL) return 0LL;       // a^0 = 1，b ≡ 1 时最小解为 0
-    ll t = 1;
+    if (m == 1) return 0;           // 模 1 下任何数同余于 0，x = 0 即解
+    if (b == 1) return 0;           // a^0 = 1，b ≡ 1 时最小解为 0
+    int64_t t = 1;
     while (t * t < m) ++t;          // 分块大小 t = ceil(sqrt(m))
-    ll cur = b;
-    unordered_map<ll, ll> bs;
-    for (ll j = 0; j < t; j++) {    // 小步：bs[cur] = j 记录 b * a^j
+    int64_t cur = b;
+    unordered_map<int64_t, int64_t> bs;
+    for (int64_t j = 0; j < t; j++) {   // 小步：bs[cur] = j 记录 b * a^j
         bs[cur] = j;                // 重复值取更大的 j，保证最终解最小
         cur = cur * a % m;
     }
-    ll step = fpow(a, t, m);        // 大步长 a^t，每次大步即乘 step
-    cur = 1LL;
-    for (ll i = 1; i <= t; i++) {   // 大步：检查 a^(i*t) 是否撞上某个 b * a^j
+    int64_t step = fpow(a, t, m);   // 大步长 a^t，每次大步即乘 step
+    cur = 1;
+    for (int64_t i = 1; i <= t; i++) {  // 大步：检查 a^(i*t) 是否撞上某个 b * a^j
         cur = cur * step % m;
         if (bs.count(cur)) return i * t - bs[cur];
     }
