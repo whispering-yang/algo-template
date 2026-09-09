@@ -547,7 +547,9 @@ a^{k} \equiv 1 \pmod{m}
 \textbf{注意：} 常用 NTT 模数的原根无需现算：$998244353$、$1004535809$、$469762049$ 的最小原根均为 $3$，可直接使用。
 \end{quote}
 
-\subsection{大步小步算法 BSGS (Baby-Step Giant-Step)}
+\subsection{离散对数 (Discrete Logarithm)}
+
+\subsubsection{大步小步算法 BSGS (Baby-Step Giant-Step)}
 
 \textbf{用途：}
 求解\textbf{离散对数}问题：给定 $a, b, m$，求最小非负整数 $x$ 使得 $a^{x} \equiv b \pmod{m}$；无解返回 $-1$。要求 $\gcd(a, m) = 1$，不互质的情形需用扩展 BSGS (exBSGS)。
@@ -578,7 +580,7 @@ a^{k} \equiv 1 \pmod{m}
 \textbf{注意：} 哈希表可直接用 \code{unordered\_map}（均摊 $O(1)$）；被卡常时可手写开放寻址哈希或对结果 \code{sort} 后二分。若 $\gcd(a, m) \ne 1$，本模板结论不可靠，必须先约去公因子（exBSGS）。
 \end{quote}
 
-\subsection{扩展大步小步算法 exBSGS (Extended BSGS)}
+\subsubsection{扩展大步小步算法 exBSGS (Extended BSGS)}
 
 \textbf{用途：}
 求解\textbf{不要求互质}情形的离散对数：给定 $a, b, m$，求最小非负整数 $x$ 使得 $a^{x} \equiv b \pmod{m}$；无解返回 $-1$。普通 BSGS 需要 $\gcd(a, m) = 1$，exBSGS 通过不断约去 $a$ 与 $m$ 的公因子，把一般情形化归为互质情形。
