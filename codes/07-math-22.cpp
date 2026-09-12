@@ -3,6 +3,8 @@
 // =============================================================================
 // 求解离散对数：a^x ≡ b (mod m)，不要求 gcd(a, m) = 1，返回最小非负整数解 x，
 // 无解返回 -1；gcd(a, m) = 1 时自动退化为普通 BSGS。
+// 调用前提：0 <= a, b < m。入口不做取模：只要首次调用时 a、b 不越界，
+// 中间乘积均不超过 m^2，后续同样不会越界，省去每次入口取模的常数。
 // 思路：不断约去 a 与 m 的公因子。设 g = gcd(a, m) > 1，若解存在则必有 g | b
 //       （否则无解）；把同余式两边与模数同除以 g，得
 //       a^(x-1) * (a/g) ≡ b/g (mod m/g)。每约一步，左侧多出累积系数
@@ -42,9 +44,8 @@ int64_t inv(int64_t d, int64_t m) {
     return (x % m + m) % m;
 }
 
-// 普通 BSGS（要求 gcd(a, m) = 1）：同 07-math-21
+// 普通 BSGS（要求 gcd(a, m) = 1、0 <= b < m；a 可不约简）：内部版，供 exbsgs 调用
 int64_t bsgs(int64_t a, int64_t b, int64_t m) {
-    a %= m, b %= m;
     if (m == 1) return 0;
     if (b == 1) return 0;
     int64_t t = 1;
@@ -64,21 +65,20 @@ int64_t bsgs(int64_t a, int64_t b, int64_t m) {
     return -1;
 }
 
-// a ^ x ≡ b (mod m)：不要求 a 与 m 互质，返回最小非负解 x，无解返回 -1
+// a ^ x ≡ b (mod m)：不要求 a 与 m 互质，要求 0 <= a, b < m；返回最小非负解 x，无解返回 -1
 int64_t exbsgs(int64_t a, int64_t b, int64_t m) {
-    a %= m, b %= m;
     if (m == 1 || b == 1) return 0;
     int64_t cnt = 0, d = 1;
     while (true) {
         int64_t g = std::gcd(a, m);
         if (g == 1) break;              // 已互质，转普通 BSGS
         if (b % g != 0) return -1;      // g 不整除 b，无解
-        b /= g, m /= g;
+        b /= g, m /= g;                 // b、m 同除 g 后仍满足 b < m
         d = d * (a / g) % m;            // 方程变为 a^(x-cnt) * d ≡ b (mod m)
         ++cnt;
         if (d == b) return cnt;         // x = cnt 恰为解，且不会再有更小的
     }
-    int64_t y = bsgs(a, b % m * inv(d, m) % m, m);  // 解 a^y ≡ b * d^(-1) (mod m)
+    int64_t y = bsgs(a, b * inv(d, m) % m, m);  // 解 a^y ≡ b * d^(-1) (mod m)
     return y == -1 ? -1 : y + cnt;
 }
 
