@@ -419,6 +419,65 @@ $C_{i,j} = \sum_{k=0}^{m-1} A_{i,k} B_{k,j}$。
 \textbf{注意：} 递归求出的特解满足 $|x| \le \dfrac{b}{g}$，$|y| \le \dfrac{a}{g}$，本身不会溢出；但特解参与「先乘后取模」的运算时仍需 \code{\_\_int128} 或先取模防溢出。
 \end{quote}
 
+\subsection{线性同余方程组 (System of Linear Congruences)}
+
+\subsubsection{中国剩余定理 CRT (Chinese Remainder Theorem)}
+
+\textbf{用途：}
+求解\textbf{模数两两互质}的同余方程组：给定 $n$ 组 $r_i,\, m_i$，求同时满足
+\[ x \equiv r_i \pmod{m_i}, \quad i = 1, 2, \dots, n \]
+的整数 $x$。定理保证解在模 $M = \prod_{i} m_i$ 意义下\textbf{存在且唯一}。模数不互质时需改用扩展中国剩余定理 (exCRT)。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item \textbf{构造解：} 令 $M = \prod_i m_i$，$c_i = M / m_i$。两两互质保证 $\gcd(c_i, m_i) = 1$，逆元 $t_i = c_i^{-1} \bmod m_i$ 存在，则
+  \[ x \;=\; \sum_{i=1}^{n} r_i\, c_i\, t_i \;\bmod M \]
+  即为解：代入第 $j$ 个方程时，$i \ne j$ 的项都含因子 $m_j$ 而消失，只剩 $r_j\, c_j\, t_j \equiv r_j \pmod{m_j}$。
+  \item \textbf{唯一性：} 若 $x_1, x_2$ 都是解，则每个 $m_i$ 都整除 $x_1 - x_2$；两两互质下 $M \mid x_1 - x_2$，故解在模 $M$ 意义下唯一。
+  \item \textbf{典型用法：} 把大模数拆成若干互质的小模数分别计算（如按质因子幂拆分），再用 CRT 合并；计算结果超出普通整数范围时，也可用多个互质模数下的余数联合表示。
+\end{itemize}
+
+\textbf{时间复杂度：} $O(n \log M)$，即每个方程一次扩展欧几里得求逆元。
+
+\lstinputlisting[language=C++]{codes/07-math-23.cpp}
+
+\begin{quote}
+\textbf{注意：} 累加项 $r_i\, c_i\, t_i$ 可达 $M \cdot m_i$ 量级，\code{int64\_t} 直接相乘会溢出，模板中用 \code{\_\_int128} 完成乘法并逐步对 $M$ 取模。要求 $0 \le r_i < m_i$，且乘积 $M$ 不超出 \code{int64\_t} 范围。
+\end{quote}
+
+\subsubsection{扩展中国剩余定理 exCRT (Extended CRT)}
+
+\textbf{用途：}
+求解\textbf{模数不要求互质}的同余方程组 $x \equiv r_i \pmod{m_i}$：有解时返回 $[0, \operatorname{lcm})$ 内的唯一解（$\operatorname{lcm}$ 为所有模数的最小公倍数），方程组矛盾时返回 $-1$。互质情形的闭式构造失效，改为\textbf{两两合并}方程。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item \textbf{合并两方程：} 设已合并部分为 $x \equiv R \pmod{M}$，与 $x \equiv r_2 \pmod{m_2}$ 合并时，把前者写成 $x = R + kM$ 代入后者，得关于 $k$ 的线性同余方程
+  \[ kM \;\equiv\; r_2 - R \pmod{m_2}. \]
+  \item \textbf{可解性：} 令 $g = \gcd(M, m_2)$，由裴蜀定理，该方程有解当且仅当 $g \mid (r_2 - R)$；不满足则整个方程组无解。
+  \item \textbf{解出 $k$：} 方程两边与模数同除以 $g$：$k \cdot \dfrac{M}{g} \equiv \dfrac{r_2 - R}{g} \pmod{\tfrac{m_2}{g}}$，此时两系数互质，用扩展欧几里得求得 $\left(\dfrac{M}{g}\right)^{-1}$，故
+  \[ k \;\equiv\; \frac{r_2 - R}{g} \cdot \left(\frac{M}{g}\right)^{-1} \pmod{\tfrac{m_2}{g}}. \]
+  \item \textbf{更新方程：} 取最小非负 $k \in [0, m_2/g)$，合并结果为 $x \equiv R + kM \pmod{\operatorname{lcm}(M, m_2)}$，新模数 $\operatorname{lcm}(M, m_2) = \dfrac{M}{g} \cdot m_2$。从 $x \equiv 0 \pmod 1$ 出发依次合并所有方程即得答案。
+\end{itemize}
+
+\textbf{算法流程：}
+
+\begin{enumerate}
+  \item 初始化已合并方程 $x \equiv 0 \pmod 1$（对任何整数恒成立，可吸收任意方程）。
+  \item 对每个 $(r_i, m_i)$：求 $g = \gcd(M, m_i)$，若 $g \nmid (r_i - R)$，返回 $-1$。
+  \item 按上式解出最小非负 $k$，更新 $R \gets R + kM$（自动落在 $[0, \text{新模数})$ 内）、$M \gets M/g \cdot m_i$；全部合并后 $R$ 即答案。
+\end{enumerate}
+
+\textbf{时间复杂度：} $O(n \log \max m_i)$，每次合并一次扩展欧几里得。
+
+\lstinputlisting[language=C++]{codes/07-math-24.cpp}
+
+\begin{quote}
+\textbf{注意：} 中间乘积 $(r_i - R) \cdot x$ 与 $kM$ 都可能超出 \code{int64\_t}，模板用 \code{\_\_int128} 相乘后立即取模；要求所有模数的最小公倍数不超出 \code{int64\_t} 范围。C++ 整数除法向零截断、取模结果带符号，模板统一用「先 \code{\%}、再 \code{+}、再 \code{\%}」把解平移到非负区间。
+\end{quote}
+
 \subsection{欧拉函数与欧拉定理 (Euler's Totient Function and Euler's Theorem)}
 
 \subsubsection{欧拉函数的定义与性质 (Definition and Properties)}
