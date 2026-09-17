@@ -2,7 +2,7 @@
 
 \subsection{Linux 系统取消栈空间限制}
 
-\lstinputlisting[language=bash]{codes/09-debug-01.sh}
+\lstinputlisting[language=bash]{codes/10-debug-01.sh}
 
 \subsection{GDB 命令行调试 (Command-Line GDB Debugging)}
 
@@ -48,7 +48,7 @@
 
 \textbf{调试流程：}
 \begin{enumerate}
-  \item \textbf{编译：} \code{g++ -g -Wall -O0 -o debug 09-debug-02.cpp}
+  \item \textbf{编译：} \code{g++ -g -Wall -O0 -o debug 10-debug-02.cpp}
   \item \textbf{启动：} \code{gdb ./debug}
   \item \textbf{设断点：} \code{(gdb) b main} 或 \code{(gdb) b 行号}
   \item \textbf{运行：} \code{(gdb) r}
@@ -59,4 +59,4 @@
 
 \textbf{GDB 命令参考（含完整调试流程）：}
 
-\lstinputlisting[language=bash]{codes/09-debug-02.gdb}
+\lstinputlisting[language=bash]{codes/10-debug-02.gdb}

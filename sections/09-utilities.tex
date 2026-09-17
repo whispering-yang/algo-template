@@ -4,22 +4,22 @@
 
 \subsection{Windows 自动编译器}
 
-\lstinputlisting[language=bash]{codes/08-utilities-01.bat}
+\lstinputlisting[language=bash]{codes/09-utilities-01.bat}
 
 \textbf{使用方法}
-\lstinputlisting[language=bash]{codes/08-utilities-02.bat}
+\lstinputlisting[language=bash]{codes/09-utilities-02.bat}
 
 \subsection{计时器}
 
 利用 \code{std::chrono} 的 RAII 计时对象：构造时开始计时，作用域结束时自动输出耗时（毫秒）。配合上一节的编译器使用，可在本地快速评估程序实际运行时间；在 \code{main} 开头声明一个 \code{Timer} 即可测得整体耗时。
 
-\lstinputlisting[language=C++]{codes/08-utilities-06.cpp}
+\lstinputlisting[language=C++]{codes/09-utilities-06.cpp}
 
 \subsection{随机数生成器}
 
 生成对拍所需的\textbf{基础随机数据}。C++11 起推荐使用 \code{mt19937}（梅森旋转引擎），比 \code{rand()} 周期长、分布均匀，且支持任意范围的均匀整数分布。
 
-\lstinputlisting[language=C++]{codes/08-utilities-03.cpp}
+\lstinputlisting[language=C++]{codes/09-utilities-03.cpp}
 
 \subsection{Python 随机数生成}
 
@@ -31,13 +31,13 @@
   \item 批量生成大量随机数时，\code{random.choices} / \code{random.sample} 由 C 实现，比循环调用 \code{randint} 快数倍。
 \end{itemize}
 
-\lstinputlisting[language=Python]{codes/08-utilities-09.py}
+\lstinputlisting[language=Python]{codes/09-utilities-09.py}
 
 \subsection{单文件对拍}
 
 数据准备好后，用对拍验证正确性：把待测程序写成下面的 \code{Solution} 骨架，核心逻辑集中在 \code{solve()} 中，便于与暴力程序批量比对输出。
 
-\lstinputlisting[language=C++]{codes/08-utilities-07.cpp}
+\lstinputlisting[language=C++]{codes/09-utilities-07.cpp}
 
 \subsection{Python 对拍器}
 
@@ -50,4 +50,4 @@
 
 脚本循环生成数据、分别运行两个程序并比对输出，遇到不一致即停止并保存出错的测试数据。
 
-\lstinputlisting[language=Python]{codes/08-utilities-08.py}
+\lstinputlisting[language=Python]{codes/09-utilities-08.py}

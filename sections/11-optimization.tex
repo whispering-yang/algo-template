@@ -6,7 +6,7 @@
 
 \textbf{用途：} 在代码开头加入 \code{\#pragma} 优化指令，或使用更强的编译选项，让编译器自动完成循环展开、向量化等优化，是最简单有效的提效手段。
 
-\lstinputlisting[language=C++]{codes/10-optimization-01.cpp}
+\lstinputlisting[language=C++]{codes/11-optimization-01.cpp}
 
 \begin{quote}
   \textbf{注意：} 部分 OJ 会忽略 \code{\#pragma}（或要求指定编译选项），此时应改用 \code{-O2} / \code{-Ofast} / \code{-march=native} 编译；本地调试时建议不加优化指令，以免影响断点与变量查看。
