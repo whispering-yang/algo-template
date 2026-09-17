@@ -2,32 +2,59 @@
 
 \subsection{并查集 (Disjoint Set Union)}
 
-\textbf{普通数组版本：}
+\textbf{用途：}
+维护不相交集合，支持查询元素所属集合（\code{find}）与合并两个集合（\code{merge}）。经典应用：连通性判断、Kruskal 最小生成树、带撤销的离线连通性问题等。
 
-使用场景：元素编号连续且已知范围。
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{代表元：} 每个集合用其中的一个元素（根节点）标识，\code{find(u)} 沿父指针上溯返回所在集合的根。
+  \item \textbf{路径压缩：} \code{find} 递归回溯时把沿途节点直接挂到根上，将树高压缩到近似常数。
+  \item \textbf{初始化：} 每个元素自成一个集合，用 \code{iota} 把父指针初始化为自身编号。
+\end{itemize}
 
-时间复杂度 $O(\alpha (n))$
+\textbf{版本选择：}
+\begin{itemize}
+  \item \textbf{数组版本：} 元素编号连续且范围已知，用 \code{array} 按上界开辟，单次操作 $O(\alpha(n))$。
+  \item \textbf{键值对版本：} 元素稀疏、编号大或未知，改用 \code{map} 存储。\code{map} 时间复杂度 $O(\alpha(n)\log n)$，常数小且稳定；\code{unordered\_map} 最好和平均时间复杂度 $O(\alpha(n))$，但常数大且不稳定。
+\end{itemize}
+
+\textbf{时间复杂度：} 路径压缩下单次操作均摊 $O(\alpha(n))$，其中 $\alpha$ 为反阿克曼函数，实际可视为常数。
 
 \lstinputlisting[language=C++]{codes/02-datastructures-01.cpp}
-
-\textbf{键值对版本：}
-
-使用场景：元素稀疏、编号大或未知。
-
-\code{std::map} 时间复杂度 $O(\alpha(n)\log n)$，常数小且稳定。
-
-\code{std::unordered\_map} 最好和平均时间复杂度 $O(\alpha(n))$，但常数大且不稳定。
 
 \lstinputlisting[language=C++]{codes/02-datastructures-02.cpp}
 
 \subsection{ST表 (Sparse Table)}
 
-\textbf{时间复杂度：} 建表 $O(n\log n)$，区间查询 $O(1)$。
+\textbf{用途：}
+静态数组的\textbf{可重复贡献}区间查询：区间最值（RMQ）、区间 gcd、按位与/或等满足 $f(x, x) = x$ 的运算。$O(n \log n)$ 预处理后单次查询 $O(1)$，不支持修改。
 
-核心代码：
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{倍增表：} \code{st[i][j]} 维护从下标 $i$ 开始、长度为 $2^j$ 的区间的聚合值。
+  \item \textbf{递推：} 长度 $2^j$ 的区间由两个长度 $2^{j-1}$ 的子区间合并而来：$st[i][j] = \mathrm{merge}\big(st[i][j-1],\ st[i + 2^{j-1}][j-1]\big)$。
+  \item \textbf{查询可重叠：} 查询 $[l, r]$ 时取 $t = \lfloor \log_2 (r - l + 1) \rfloor$，用两段可重叠的长度 $2^t$ 区间覆盖整个区间。最值、gcd 等运算允许元素重复贡献，故 $O(1)$；区间和等不满足，需改用树状数组或线段树。
+  \item \textbf{封装：} 模板用 \code{SparseTable<T>} 泛型封装，替换 \code{merge} 即可适配其他可重复贡献运算。
+\end{itemize}
+
+\textbf{时间复杂度：} 建表 $O(n \log n)$，区间查询 $O(1)$，空间 $O(n \log n)$。
+
 \lstinputlisting[language=C++]{codes/02-datastructures-03.cpp}
 
 \subsection{树状数组 (Fenwick Tree)}
+
+\textbf{用途：}
+以 $O(\log n)$ 支持\textbf{单点修改}与\textbf{前缀和查询}，进而解决逆序对计数、动态第 $k$ 小（配合倍增）、二维偏序统计等问题。是线段树的轻量替代：代码短、常数小，但只适合维护前缀和型（可减性）信息。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{lowbit：} \code{lowbit(x) = x \& -x} 取二进制最低位的 1 所代表的值，即节点 $x$ 管辖的区间长度。
+  \item \textbf{树形结构：} 节点 $x$ 管辖区间 $(x - \code{lowbit}(x),\ x]$。\code{modify} 沿 $x \mathrel{+}= \code{lowbit}(x)$ 逐层更新所有覆盖 $x$ 的节点；\code{query} 沿 $x \mathrel{-}= \code{lowbit}(x)$ 向前累加得到前缀和。
+  \item \textbf{$O(n)$ 建树：} 先把初值直接放入 \code{tree}，再令 \code{tree[j]} 累加 \code{tree[i]}（$j = i + \code{lowbit}(i)$），避免 $n \log n$ 次单点加。
+  \item \textbf{倍增找第 $k$ 小：} 从最高位幂开始贪心试探，沿树下行定位到前缀和恰小于 $k$ 的位置，加一即为第 $k$ 小的值（要求值域作为下标，常配合离散化）。
+\end{itemize}
+
+\textbf{时间复杂度：} 单点修改、前缀查询、第 $k$ 小查询均为 $O(\log n)$，建树 $O(n)$，空间 $O(n)$。
 
 \lstinputlisting[language=C++]{codes/02-datastructures-04.cpp}
 
