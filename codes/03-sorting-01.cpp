@@ -8,9 +8,8 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-const int MAXN = 5e5 + 5;
-
-int n, a[MAXN], tmp[MAXN];
+int n;
+vector<int> a, tmp;
 int64_t cnt = 0;    // 逆序对最多 n(n-1)/2，约 1.25e11，须用 int64_t
 
 void merge_sort(int l, int r) {     // 对闭区间 [l, r] 排序并统计逆序对
@@ -38,6 +37,8 @@ int main() {
     cin.tie(nullptr);
 
     cin >> n;
+    a.resize(n + 1);
+    tmp.resize(n + 1);
     for (int i = 1; i <= n; i++) cin >> a[i];
 
     merge_sort(1, n);

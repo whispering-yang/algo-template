@@ -58,6 +58,10 @@ xelatex -interaction=nonstopmode main.tex
   5. **代码模板**：在 `codes/` 目录下创建 `.cpp` 文件，用 `\lstinputlisting[language=C++]{codes/xx-name.cpp}` 引入。
 - **外部代码同步**：所有代码块均存放在 `codes/` 目录中，修改 `.cpp` 文件后重新编译即可更新 PDF。
 - **C++ 代码规范**：代码使用 C++17 风格，变量命名清晰，必要时添加注释。
+- **容器规范**：不使用 C 风格数组（如 `int a[MAXN]`），一律改用容器：
+  - `vector`：长度取决于运行期输入（如 $n$）时使用，在 `main` 读入 $n$ 后 `resize(n + 1)`；
+  - `array`：编译期定容的全局表/节点池（如 `array<int, N << 5> lc, rc;`）；
+  - 类型名**不加 `std::` 前缀**（模板统一 `#include <bits/stdc++.h>` + `using namespace std;`），`std::array` 等写法仅用于正文文字说明。
 
 ### 2. 新增章节（新的 section）
 

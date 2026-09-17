@@ -11,11 +11,9 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-constexpr int MAXN = 5e5 + 15;
-
 int n, m, block;
-int a[MAXN];         // 离散化后的数组（下标 1..n）
-int cnt[MAXN];       // cnt[c]：当前区间内值 c 的出现次数
+vector<int> a;       // 离散化后的数组（下标 1..n）
+vector<int> cnt;     // cnt[c]：当前区间内值 c 的出现次数
 int cur = 0;         // 当前答案：区间内不同值的个数
 
 struct Query {
@@ -25,9 +23,9 @@ struct Query {
         if (bl != br) return bl < br;            // 先按左端点所在块
         return bl & 1 ? r > rhs.r : r < rhs.r;   // 块内按右端点，奇偶块反向
     }
-} qs[MAXN];
-
-int ans[MAXN];
+};
+vector<Query> qs;
+vector<int> ans;
 
 void add(int i) { if (++cnt[a[i]] == 1) ++cur; }
 void del(int i) { if (--cnt[a[i]] == 0) --cur; }
@@ -37,6 +35,7 @@ int main() {
     cin.tie(nullptr);
 
     cin >> n >> m;
+    a.resize(n + 1);
     vector<int> vals;
     vals.reserve(n);
     for (int i = 1; i <= n; ++i) {
@@ -48,13 +47,16 @@ int main() {
     vals.erase(unique(vals.begin(), vals.end()), vals.end());
     for (int i = 1; i <= n; ++i)
         a[i] = int(lower_bound(vals.begin(), vals.end(), a[i]) - vals.begin()) + 1;
+    cnt.assign(n + 1, 0);
 
+    qs.resize(m);
     for (int i = 0; i < m; ++i) {
         cin >> qs[i].l >> qs[i].r;
         qs[i].idx = i;
     }
     block = max<int>(1, int(n / sqrt(double(m))));   // 最优块长 B = n/sqrt(m)
-    sort(qs, qs + m);
+    sort(qs.begin(), qs.end());
+    ans.assign(m, 0);
 
     int l = 1, r = 0;                    // 空区间
     for (int i = 0; i < m; ++i) {

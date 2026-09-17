@@ -5,10 +5,8 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-const int N = 1e7 + 5;  // 按需调整上界
-
-int phi[N];             // phi[x] 为欧拉函数 phi(x)
-int min_prime_factor[N];    // x 的最小质因子；等于 0 当且仅当 x 尚未被筛到（x 为质数）
+vector<int> phi;            // phi[x] 为欧拉函数 phi(x)，由 sieve(n) 分配
+vector<int> min_prime_factor;   // x 的最小质因子；等于 0 当且仅当 x 尚未被筛到（x 为质数）
 vector<int> primes;     // [2, n] 内所有质数（升序）
 
 // 欧拉筛：每个合数只被其最小质因子筛掉一次，严格 O(n)
@@ -17,6 +15,8 @@ vector<int> primes;     // [2, n] 内所有质数（升序）
 //   p 为 i 的最小质因子   : phi[i*p] = phi[i] * p      (i*p 与 i 质因子集合相同)
 //   p 与 i 互质           : phi[i*p] = phi[i] * (p-1)  (积性)
 void sieve(int n) {
+    phi.assign(n + 1, 0);
+    min_prime_factor.assign(n + 1, 0);
     phi[1] = 1;
     for (int i = 2; i <= n; ++i) {
         if (min_prime_factor[i] == 0) {     // i 是质数

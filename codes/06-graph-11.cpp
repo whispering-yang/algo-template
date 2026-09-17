@@ -4,7 +4,7 @@ using namespace std;
 constexpr long long INF = 0x3f3f3f3f3f3f3f3fLL;
 constexpr int N = 505;
 int n, m;
-long long d[N][N];
+array<array<long long, N>, N> d;
 
 void floyd() {
     for (int k = 1; k <= n; k++)        // 枚举中转点

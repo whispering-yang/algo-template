@@ -1,5 +1,10 @@
+#include <bits/stdc++.h>
+using namespace std;
+
 constexpr int N = 5e5 + 5, LOG = 19;
-int n, m, dep[N], pa[LOG][N];
+int n, m;
+array<int, N> dep;
+array<array<int, N>, LOG> pa;
 vector<vector<int>> adj;
 
 void dfs(int node, int f) {

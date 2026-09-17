@@ -1,15 +1,16 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-const int MAXN = 200005;
+constexpr int MAXN = 200005;  // 节点池上界（按 n 与值域调整）
 
 int n, m;                    // n: 数组长度, m: 离散化后值域
-int a[MAXN];                 // 原数组 (1-indexed)
+vector<int> a;               // 原数组 (1-indexed)
 vector<int> uniq;            // 离散化
 
-// 主席树
-int lc[MAXN << 5], rc[MAXN << 5], cnt[MAXN << 5];  // 左右儿子, 节点计数
-int rt[MAXN], node_cnt;      // rt[i]: 版本 i 的根节点, node_cnt: 节点计数器
+// 主席树：节点总数上界 MAXN << 5，用 std::array 静态分配
+array<int, MAXN << 5> lc, rc, cnt;    // 左右儿子, 节点计数
+vector<int> rt;              // rt[i]: 版本 i 的根节点
+int node_cnt;                // 节点计数器
 
 // 建空树（版本 0）[l, r)
 int build(int l, int r) {
@@ -57,6 +58,8 @@ int main() {
     cin.tie(nullptr);
 
     cin >> n >> m;
+    a.resize(n + 1);
+    rt.resize(n + 1);
     for (int i = 1; i <= n; ++i) {
         cin >> a[i];
         uniq.push_back(a[i]);

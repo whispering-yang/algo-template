@@ -5,11 +5,10 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-const int MAXN = 1e5 + 5;              // 按需调整数组上界
+constexpr int MAXN = 1e5 + 5;          // 按需调整数组上界
 
-int64_t init_values[MAXN];             // 原始数组 (1-indexed)，建树前填入
-int64_t sum[MAXN << 2];                // sum[node]：节点管辖区间的元素和
-int64_t lazy[MAXN << 2];               // lazy[node]：子树中每个元素待加的值（尚未下传）
+array<int64_t, MAXN> init_values;      // 原始数组 (1-indexed)，建树前填入
+array<int64_t, MAXN << 2> sum, lazy;   // sum/lazy[node]：区间和与待下传的加标记
 
 // 用左右儿子的信息更新父节点
 void push_up(int node) {

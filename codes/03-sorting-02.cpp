@@ -7,10 +7,9 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-const int MAXN = 5e5 + 5;
-
-int n, a[MAXN], rk[MAXN];   // rk[i]：a[i] 离散化后的排名 (1..m)
-int tree[MAXN];             // 树状数组：各排名的出现次数
+int n;
+vector<int> a, rk;          // rk[i]：a[i] 离散化后的排名 (1..m)
+vector<int> tree;           // 树状数组：各排名的出现次数
 int64_t cnt = 0;            // 逆序对最多 n(n-1)/2，须用 int64_t
 
 int lowbit(int x) {
@@ -32,10 +31,13 @@ int main() {
     cin.tie(nullptr);
 
     cin >> n;
+    a.resize(n + 1);
+    rk.resize(n + 1);
+    tree.assign(n + 1, 0);
     for (int i = 1; i <= n; i++) cin >> a[i];
 
     // 离散化：值域可能很大或含负数，映射到不超过 n 的排名
-    vector<int> vals(a + 1, a + n + 1);
+    vector<int> vals(a.begin() + 1, a.begin() + n + 1);
     sort(vals.begin(), vals.end());
     vals.erase(unique(vals.begin(), vals.end()), vals.end());
     for (int i = 1; i <= n; i++)

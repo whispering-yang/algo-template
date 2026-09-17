@@ -5,10 +5,10 @@ using namespace std;
 // 圆方树 (Block-Cut Tree)
 // 圆点 1~n 对应原图的点；方点 n+1~tot 每个对应一个点双连通分量，
 // 与该点双内的所有圆点连边。
-constexpr int MAXN = 5e5 + 15;
 int n, m, dfn_cnt = 0, tot = 0;  // tot 初值为 n，每发现一个点双 ++tot
-vector<int> adj[MAXN], vt[2 * MAXN];
-int dfn[MAXN], low[MAXN], stk[MAXN], top = 0;
+vector<vector<int>> adj, vt;     // 原图邻接表；圆方树（方点编号 n+1..tot）
+vector<int> dfn, low, stk;
+int top = 0;
 
 void link(int u, int v) {
     vt[u].push_back(v);
@@ -41,6 +41,12 @@ int main() {
 
     cin >> n >> m;
     tot = n;
+    // 方点数 = 点双数 <= m（每条边恰属一个点双），故 tot <= n + m
+    adj.resize(n + 1);
+    vt.resize(n + m + 2);
+    dfn.resize(n + 1);
+    low.resize(n + 1);
+    stk.resize(n + 1);
     for (int i = 0; i < m; i++) {
         int u, v;
         cin >> u >> v;

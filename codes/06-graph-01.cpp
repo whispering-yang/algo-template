@@ -1,5 +1,10 @@
-constexpr int N = 5e5 + 5;
-int n, m, dfn_cnt, dfn[N], st[19][N];
+#include <bits/stdc++.h>
+using namespace std;
+
+constexpr int N = 5e5 + 5, LOG = 19;
+int n, m, dfn_cnt;
+array<int, N> dfn;
+array<array<int, N>, LOG> st;
 vector<vector<int>> adj;
 
 // 返回两个节点中 dfn 值较小的那个节点编号

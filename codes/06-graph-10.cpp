@@ -4,13 +4,13 @@ using namespace std;
 constexpr long long INF = 0x3f3f3f3f3f3f3f3fLL;
 constexpr int N = 1e5 + 5;
 int n, m, s;
-long long dist[N];
-vector<pair<int, long long>> adj[N];
+vector<long long> dist;
+vector<vector<pair<int, long long>>> adj;
 // 小根堆：(当前距离, 节点编号)
 priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<>> pq;
 
 void dijkstra(int s) {
-    memset(dist, 0x3f, sizeof(dist));
+    fill(dist.begin(), dist.end(), INF);
     dist[s] = 0;
     pq.emplace(0, s);
     while (!pq.empty()) {
@@ -25,5 +25,5 @@ void dijkstra(int s) {
     }
 }
 
-// 使用前：读入 n, m, s，向 adj 中加入有向边 (u, v, w)；调用 dijkstra(s)
+// 使用前：读入 n, m, s，将 dist、adj resize 到 n + 1，向 adj 中加入有向边 (u, v, w)；调用 dijkstra(s)
 // 仅适用于边权非负的图；最终 dist[i] 为 s 到 i 的最短路，不可达为 INF

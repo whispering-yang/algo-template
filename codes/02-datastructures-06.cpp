@@ -5,22 +5,20 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-const int MAXN = 100005;
-
 int n, m, root, MOD;
-int64_t weight[MAXN];                  // 各点初始权值 (1-indexed)
-vector<int> adj[MAXN];                 // 邻接表
+vector<int64_t> weight;                // 各点初始权值 (1-indexed)
+vector<vector<int>> adj;               // 邻接表
 
 // ---------- 第一遍 DFS 求出的树信息 ----------
-int parent[MAXN];                      // 父节点
-int depth[MAXN];                       // 深度（根为 1）
-int subtree_size[MAXN];                // 子树大小
-int heavy_child[MAXN];                 // 重儿子（子树最大的儿子，叶子为 0）
+vector<int> parent;                    // 父节点
+vector<int> depth;                     // 深度（根为 1）
+vector<int> subtree_size;              // 子树大小
+vector<int> heavy_child;               // 重儿子（子树最大的儿子，叶子为 0）
 
 // ---------- 第二遍 DFS 求出的剖分信息 ----------
-int chain_top[MAXN];                   // 所在重链的链顶（深度最小的节点）
-int dfn[MAXN];                         // DFS 序编号（同一条重链上连续）
-int dfn_to_node[MAXN];                 // DFS 序 -> 原节点编号 的反映射
+vector<int> chain_top;                 // 所在重链的链顶（深度最小的节点）
+vector<int> dfn;                       // DFS 序编号（同一条重链上连续）
+vector<int> dfn_to_node;               // DFS 序 -> 原节点编号 的反映射
 int dfn_timer = 0;
 
 void dfs1(int u, int p) {
@@ -55,9 +53,9 @@ void dfs2(int u, int top_node) {
 // ---------- 建在 DFS 序上的线段树（区间加 / 区间求和，带取模） ----------
 struct SegTree {
     vector<int64_t> sum, lazy;
-    SegTree() {
-        sum.assign(MAXN << 2, 0);
-        lazy.assign(MAXN << 2, 0);
+    void init(int n) {                  // 读入 n 后调用，按需分配
+        sum.assign(n << 2, 0);
+        lazy.assign(n << 2, 0);
     }
 
     void push_up(int node) {
@@ -153,6 +151,13 @@ int main() {
     cin.tie(nullptr);
 
     cin >> n >> m >> root >> MOD;
+    weight.resize(n + 1);
+    adj.resize(n + 1);
+    for (auto *arr : {&parent, &depth, &subtree_size, &heavy_child,
+                      &chain_top, &dfn, &dfn_to_node})
+        arr->resize(n + 1);
+    seg.init(n);
+
     for (int i = 1; i <= n; ++i) cin >> weight[i];
     for (int i = 1; i < n; ++i) {
         int u, v;

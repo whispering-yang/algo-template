@@ -12,17 +12,16 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-constexpr int MAXN = 133333 + 15;   // 数颜色规模，按题调整
-
 int n, m, block;
-int a[MAXN];          // 数组当前状态（下标 1..n，离散化后）
+vector<int> a;        // 数组当前状态（下标 1..n，离散化后）
 int cur = 0;          // 当前答案：区间内不同值的个数
 int cl = 1, cr = 0, ct = 0;   // 当前区间与已执行的修改数
 vector<int> cnt;      // cnt[c]：当前区间内值 c 的出现次数
 
 struct Update {
     int pos, val;     // 修改：a[pos] <- val（离散化后的值）
-} upd[MAXN];
+};
+vector<Update> upd;
 
 struct Query {
     int l, r, t, idx;         // t：该询问之前已发生的修改数
@@ -31,9 +30,9 @@ struct Query {
         if (r / block != rhs.r / block) return r / block < rhs.r / block;
         return t < rhs.t;
     }
-} qs[MAXN];
-
-int ans[MAXN];
+};
+vector<Query> qs;
+vector<int> ans;
 
 void add(int i) { if (++cnt[a[i]] == 1) ++cur; }
 void del(int i) { if (--cnt[a[i]] == 0) --cur; }
@@ -51,26 +50,25 @@ int main() {
     cin.tie(nullptr);
 
     cin >> n >> m;
+    a.resize(n + 1);
     vector<int> vals;
     vals.reserve(n + m);
     for (int i = 1; i <= n; ++i) {
         cin >> a[i];
         vals.push_back(a[i]);
     }
-    int totq = 0, totupd = 0;
     for (int j = 0; j < m; ++j) {
         char op;
         int x, y;
         cin >> op >> x >> y;
         if (op == 'Q') {
-            qs[totq] = {x, y, totupd, totq};
-            ++totq;
+            qs.push_back({x, y, (int)upd.size(), (int)qs.size()});
         } else {                      // 修改：a[x] <- y
-            upd[totupd] = {x, y};
+            upd.push_back({x, y});
             vals.push_back(y);
-            ++totupd;
         }
     }
+    int totq = qs.size();
     // 离散化：初始值与全部修改值一起压到 [1, n + 修改数]
     sort(vals.begin(), vals.end());
     vals.erase(unique(vals.begin(), vals.end()), vals.end());
@@ -78,11 +76,12 @@ int main() {
         return int(lower_bound(vals.begin(), vals.end(), v) - vals.begin()) + 1;
     };
     for (int i = 1; i <= n; ++i) a[i] = id(a[i]);
-    for (int i = 0; i < totupd; ++i) upd[i].val = id(upd[i].val);
+    for (auto &u : upd) u.val = id(u.val);
     cnt.assign(vals.size() + 1, 0);
 
     block = max<int>(1, int(pow(n, 2.0 / 3)));   // 块长 n^(2/3)
-    sort(qs, qs + totq);
+    sort(qs.begin(), qs.end());
+    ans.assign(totq, 0);
 
     for (int i = 0; i < totq; ++i) {
         while (cl > qs[i].l) add(--cl);
