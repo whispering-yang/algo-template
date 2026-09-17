@@ -703,6 +703,37 @@ a^{k} \equiv 1 \pmod{m}
     \item 典型应用：批量求约数个数 $d(n)=\sum_{d\mid n}1$ 与约数和 $\sigma(n)=\sum_{d\mid n}d$；莫比乌斯反演的两种方向变换；后缀和适合「对每个 $i$ 汇总其所有倍数的贡献」型统计。
 \end{itemize}
 
+\subsection{莫比乌斯函数与莫比乌斯反演 (Möbius Function and Möbius Inversion)}
+
+\textbf{用途：}
+已知 $F(n)=\sum_{d\mid n}G(d)$ 时反解出 $G(n)$，本质是数论函数在狄利克雷卷积意义下的「容斥差分」。最常见的应用是 $\gcd$ 计数类问题：先用 $\mu$ 把 $[\gcd(i,j)=k]$ 这类整除条件展开成可计算的整除分块求和，再把单次询问降到 $O(\sqrt{n})$。
+
+\textbf{核心概念：}
+\begin{itemize}
+    \item \textbf{莫比乌斯函数：}
+    \[ \mu(n)=\begin{cases}1 & n=1\\ 0 & n\text{ 含平方因子}\\ (-1)^k & n\text{ 为 }k\text{ 个互异质因子之积}\end{cases} \]
+    它是恒 $1$ 函数 $\mathbf{1}$ 在狄利克雷卷积下的逆元：$\mu * \mathbf{1} = \varepsilon$（$\varepsilon(1)=1$，其余为 $0$）。
+    \item \textbf{关键恒等式：} $\sum_{d\mid n}\mu(d) = [n=1]$，即 $\mu$ 在全部约数上的和恰筛选出 $n=1$，这是反演的出发点。
+    \item \textbf{约数形式反演：} $F(n)=\sum_{d\mid n}G(d)\iff G(n)=\sum_{d\mid n}\mu(d)\,F(n/d)$。
+    \item \textbf{倍数形式反演：} $f(n)=\sum_{n\mid d}g(d)\iff g(n)=\sum_{n\mid d}\mu(d/n)\,f(d)$，$\gcd$ 计数中最常用。
+    \item \textbf{积性：} $\mu$ 是积性函数，可线性筛；配合前缀和即可在整除分块中 $O(1)$ 求区间和。
+\end{itemize}
+
+\textbf{算法流程（经典套路，求 $\sum_{i=1}^{n}\sum_{j=1}^{m}[\gcd(i,j)=k]$）：}
+\begin{enumerate}
+    \item 设 $f(t)$ 为满足 $t\mid\gcd(i,j)$ 的对数，则 $f(t)=\lfloor n/t\rfloor\lfloor m/t\rfloor$；记 $g(t)$ 为 $\gcd$ 恰为 $t$ 的对数，所求即 $g(k)$。由 $f(t)=\sum_{t\mid d}g(d)$ 用倍数形式反演得 $g(k)=\sum_{k\mid d}\mu(d/k)\,f(d)$。
+    \item 换元 $d=k\,d'$：$g(k)=\sum_{d'=1}^{\min(n,m)/k}\mu(d')\left\lfloor\frac{n}{k\,d'}\right\rfloor\left\lfloor\frac{m}{k\,d'}\right\rfloor$。
+    \item 对 $\lfloor n/(k\,d')\rfloor$ 与 $\lfloor m/(k\,d')\rfloor$ 同时整除分块：商相同的一整段内系数是 $\mu$ 的区间和，用前缀和 $O(1)$ 取出，单次询问 $O(\sqrt{n})$。
+\end{enumerate}
+
+\textbf{时间复杂度：} 筛 $\mu$ 与前缀和 $O(N)$；每次询问整除分块 $O(\sqrt{n})$。多组询问共用一份前缀和摊销更优。
+
+\begin{quote}
+\textbf{注意：} $d'$ 的枚举上界是 $\lfloor\min(n,m)/k\rfloor$；分块右端点须对两个商的边界与上界同时取 $\min$，否则会越界或漏段。
+\end{quote}
+
+\lstinputlisting[language=C++]{codes/07-math-26.cpp}
+
 \subsection{博弈论 (Game Theory)}
 
 \subsubsection{Nim 游戏与 SG 函数 (Nim Game and Sprague--Grundy Theorem)}
