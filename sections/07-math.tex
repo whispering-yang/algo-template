@@ -674,6 +674,35 @@ a^{k} \equiv 1 \pmod{m}
 \textbf{注意：} $b \equiv 0 \pmod m$（即 $a^{x} \equiv 0$）的情形无需特判，约分过程会自动处理，如 $2^{x} \equiv 0 \pmod 8$ 得 $x = 3$。求最小解时「$d = b$ 即返回 $cnt$」的检查不可省略，否则会漏掉小于 $cnt$ 的解。
 \end{quote}
 
+\subsection{狄利克雷前缀和与后缀和 (Dirichlet Prefix and Suffix Sum)}
+
+\textbf{用途：}  
+在整除偏序上做快速求和：给定定义在 $[1, N]$ 上的数列 $f$，$O(N\log\log N)$ 内一次性求出
+\[ \text{前缀和（约数和）：}\; g(n)=\sum_{d\mid n}f(d) \qquad\text{或}\qquad \text{后缀和（倍数和）：}\; g(n)=\sum_{\substack{n\mid d\\ d\le N}}f(d) \]
+的全部函数值，优于逐个枚举约数的 $O(N\log N)$ 与暴力 $O(N^2)$。它是子集求和 SOS (Sum over Subsets) 把二进制位换成质因子指数、把「子集包含」换成「整除」的版本；逆变换即莫比乌斯反演方向，可批量完成 $\sum_{d\mid n}\mu(n/d)\,g(n/d)$ 型变换而无需筛出 $\mu$。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{指数向量视角：} 把 $m=\prod_i p_i^{e_i}$ 看作指数向量 $(e_1,e_2,\dots)$，则 $d\mid m\iff$ 每一维上 $d$ 的指数都不超过 $m$ 的指数。整除偏序恰为指数向量按维比较的乘积偏序。
+    \item \textbf{逐维累加：} SOS 对每个二进制位做一遍前缀和，这里对每个质数 $p\le N$ 做「沿 $p$ 的指数维」的前缀和：枚举 $j=1,\dots,\lfloor N/p\rfloor$，执行 \code{a[j*p] += a[j]}。$j$ 递增使累加沿同一条链逐级传递（$p^2$ 继承 $p$ 的部分和、$p^3$ 再继承 $p^2$，如此覆盖所有指数）；各质数维相互独立，质数之间的处理顺序不影响结果。后缀和对偶地枚举 $j=\lfloor N/p\rfloor,\dots,1$，执行 \code{a[j] += a[j*p]}。
+    \item \textbf{逆变换（莫比乌斯方向）：} 前缀和是沿维累加，逆变换即沿维差分，恰好实现 $f=\mu*g$（$\mu$ 为莫比乌斯函数，$*$ 为 Dirichlet 卷积）。实现上把 $+=$ 换成 $-=$ 并\textbf{将内层枚举反向}，原因见下方注意。
+\end{itemize}
+
+\textbf{时间复杂度：} 内层循环总次数 $\sum_{p\le N}\lfloor N/p\rfloor=O(N\log\log N)$（Mertens 第二定理），空间复杂度 $O(N)$，另需一次线性筛出质数表。
+
+\lstinputlisting[language=C++]{codes/07-math-25.cpp}
+
+\begin{quote}
+\textbf{注意：} 正变换的内层方向不可写反（前缀和 $j$ 递增、后缀和 $j$ 递减，否则该维不是前缀/后缀和）；逆变换在 $-=$ 的同时必须把内层\textbf{反方向}枚举——差分引用的一侧必须是本趟尚未更新的原值，方向不反时深度 $\ge 3$ 的链（如 $p^3\mid n$）会算成交错和。
+\end{quote}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 四个变换均原地、可逆：先做前缀和、再用倒序的 $-=$ 版本即可还原原数组，后缀和同理（内层方向相反）。
+    \item 模意义下使用时，在每次加/减后对模数取模即可：元素已归约时单步加减至多使绝对值翻倍，不会溢出 \code{int64\_t}。
+    \item 典型应用：批量求约数个数 $d(n)=\sum_{d\mid n}1$ 与约数和 $\sigma(n)=\sum_{d\mid n}d$；莫比乌斯反演的两种方向变换；后缀和适合「对每个 $i$ 汇总其所有倍数的贡献」型统计。
+\end{itemize}
+
 \subsection{博弈论 (Game Theory)}
 
 \subsubsection{Nim 游戏与 SG 函数 (Nim Game and Sprague--Grundy Theorem)}
