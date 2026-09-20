@@ -42,6 +42,33 @@
 
 \lstinputlisting[language=C++]{codes/06-graph-06.cpp}
 
+\subsubsection{Tarjan 离线求 LCA}
+
+\textbf{用途：} 全部询问事先给出时一次性求出所有 LCA，无需 $O(n \log n)$ 预处理；不支持在线查询。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item 对树做 DFS，某棵子树回溯完毕后，用并查集把它并入其父节点所在的集合。每个集合的根即集合内所有节点的\textbf{最深未回溯祖先}。
+  \item 节点 $u$ 回溯完毕时，检查挂在 $u$ 上的询问 $(u, v)$：若对端 $v$ 尚未回溯则跳过（留给 $v$ 回溯时回答）；若 $v$ 已回溯，则 $\operatorname{find}(v)$ 即为 $\operatorname{LCA}(u, v)$。
+  \item 正确性：$u$ 回溯时 $\operatorname{LCA}(u, v)$ 仍在 DFS 栈上（未回溯），而 $v$ 到 $\operatorname{LCA}$ 之间的节点均已回溯并入集合，故 $v$ 所在集合的根恰好是 $\operatorname{LCA}$。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item 建树，每个询问 $(u, v)$ 连同编号挂在 $u$、$v$ 两个端点上。
+  \item 从根开始 DFS：每棵子树回溯后执行合并 \texttt{fa[find(v)] = u}。
+  \item 当前节点标记为已回溯，回答对端也已回溯的询问，答案取 \texttt{find(对端)}。
+\end{enumerate}
+
+\textbf{时间复杂度：} $O((n + m)\alpha(n))$，其中 $m$ 为询问数，$\alpha$ 为反阿克曼函数，可视为常数。
+
+\lstinputlisting[language=C++]{codes/06-graph-14.cpp}
+
+\begin{quote}
+\textbf{注意：} 询问必须一次性全部读入（离线），且由后回溯的一端回答、恰好回答一次。与 dfn/倍增法相比省去了 $O(n \log n)$ 预处理与 $O(\log n)$ 查询代价，但无法在线；深链场景需注意 DFS 递归深度。
+\end{quote}
+
 \subsection{Dijkstra 算法（单源最短路）}
 
 \textbf{用途：} 求解\textbf{非负权图}中的单源最短路（Single-Source Shortest Path, SSSP），即从起点 $s$ 到其余所有点的最短距离。
