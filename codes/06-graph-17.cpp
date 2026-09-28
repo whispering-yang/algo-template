@@ -22,17 +22,19 @@ int main() {
     });
 
     // 原图顶点为 1..n；每次有效合并新建一个节点，最多用到 2n-1。
-    vector<int> fa(n + 1), size(n + 1, 1), component_root(n + 1);
-    vector<int> tree_parent(2 * n + 1, 0);
-    vector<long long> weight(2 * n + 1, 0);
-    iota(fa.begin(), fa.end(), 0);
-    iota(component_root.begin(), component_root.end(), 0);
+    // dsu 的代表元就是当前连通块在重构树上的根，不按集合大小合并。
+    vector<int> dsu(2 * n + 1), parent(2 * n + 1, 0);
+    vector<long long> val(2 * n + 1, 0);  // 仅新建节点的点权有效
+    iota(dsu.begin(), dsu.end(), 0);
     auto find = [&](int u) {
-        while (fa[u] != u) {
-            fa[u] = fa[fa[u]];
-            u = fa[u];
+        int r = u;
+        while (dsu[r] != r) r = dsu[r];
+        while (dsu[u] != u) {
+            int p = dsu[u];
+            dsu[u] = r;  // 将路径上的节点直接连向代表元
+            u = p;
         }
-        return u;
+        return r;
     };
 
     int tot = n;
@@ -40,12 +42,9 @@ int main() {
         int x = find(u), y = find(v);
         if (x == y) continue;
         ++tot;
-        weight[tot] = w;
-        tree_parent[component_root[x]] = tree_parent[component_root[y]] = tot;
-        if (size[x] < size[y]) swap(x, y);
-        fa[y] = x;
-        size[x] += size[y];
-        component_root[x] = tot;
+        val[tot] = w;
+        parent[x] = parent[y] = tot;  // 两棵重构树挂到新节点下
+        dsu[x] = dsu[y] = tot;       // 新节点成为合并后连通块的代表元
     }
 
     int log = 1;
@@ -55,7 +54,7 @@ int main() {
     vector<int> root(tot + 1, 0);
     // 父节点编号总大于子节点；倒序即可先算出父节点的深度和倍增表。
     for (int u = tot; u >= 1; --u) {
-        int p = tree_parent[u];
+        int p = parent[u];
         if (p != 0) depth[u] = depth[p] + 1;
         root[u] = p == 0 ? u : root[p];
         up[0][u] = p;
@@ -81,7 +80,7 @@ int main() {
         cin >> u >> v;
         if (u == v) cout << "0\n";
         else if (root[u] != root[v]) cout << "impossible\n";
-        else cout << weight[lca(u, v)] << '\n';
+        else cout << val[lca(u, v)] << '\n';
     }
     return 0;
 }
