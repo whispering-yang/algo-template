@@ -1,0 +1,151 @@
+\section{网络流}
+
+\textbf{流网络} (Flow Network) 是指定源点 $s$ 与汇点 $t$ 的有向图 $G=(V,E)$，每条边 $(u,v)$ 带非负容量 $c(u,v)$。边上的\textbf{流量} $f(u,v)$ 需满足两条约束：容量限制 $0 \le f(u,v) \le c(u,v)$；除 $s,t$ 外每个点\textbf{流量守恒}（流入量等于流出量）。本章依次讨论最大流、最小割、最小费用最大流及其在二分图匹配上的应用，最后给出带流量下界的转化方法。
+
+\subsection{最大流 (Maximum Flow)}
+
+\textbf{用途：} 求从源点 $s$ 到汇点 $t$ 的最大可行流量；它同时是最小割、二分图匹配、上下界网络流等模型的统一求解框架。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{残量网络 (Residual Network)：} 对每条边维护剩余容量 $c_f(u,v)=c(u,v)-f(u,v)$。实现时为每条正边配一条初始容量为 $0$ 的反向边，正边推流的同时增大反向边容量。
+  \item \textbf{反向边与退流：} 反向边容量记录已推送的流量，沿反向边增广即撤销（反悔）先前路径上的部分流量。没有反向边，贪心增广可能把流量「堵死」在错误的路径上而丢失最优解。
+  \item \textbf{增广路 (Augmenting Path)：} 残量网络中一条 $s \to t$ 的路径，路径上最小的剩余容量就是本次可增广的流量。
+  \item \textbf{层次图与多路增广：} 每轮先用 BFS 给残量网络分层（\code{level} 为点到 $s$ 的 BFS 距离），DFS 只沿层次恰好增加 $1$ 的边推进，一次 DFS 可沿多条路径送流。
+  \item \textbf{当前弧优化：} 用 \code{cur[u]} 记录点 $u$ 已扫描到的出边下标；某条出边已无法再送出流量时，本轮内不再重复检查。
+  \item \textbf{最大流最小割定理 (Max-Flow Min-Cut Theorem)：} $s$-$t$ 最大流的值等于 $s$-$t$ 最小割的容量（见下一小节）。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item \code{add(u,v,c)} 成对加入正边与反向边，两边的下标异或 $1$ 即互为对方。
+  \item 从 $s$ 出发 BFS 分层；若 $t$ 不可达则算法结束。
+  \item 重置当前弧，DFS 在层次图上多路增广，流量沿递归回传并同步修改正反边容量。
+  \item 累计各轮增广量，直至 BFS 无法到达 $t$。
+\end{enumerate}
+
+\textbf{时间复杂度：} 一般图 $O(n^2 m)$；单位容量图（如二分图匹配建模）$O(m\sqrt{n})$。实际运行速度远好于上界，是竞赛中的默认选择。
+
+\begin{quote}
+\textbf{注意：} 无向边应调用两次 \code{add(u,v,w)} 与 \code{add(v,u,w)} 拆成两条有向边；增广后若要输出每条边的实际流量，读入时记录边在边表中的下标，实际流量 $=$ 容量 $-$ 剩余容量。
+\end{quote}
+
+\lstinputlisting[language=C++]{codes/07-networkflow-01.cpp}
+
+\subsection{最小割 (Minimum Cut)}
+
+\textbf{用途：} 删去总容量最小的一组边使 $s$ 与 $t$ 不再连通；大量「二选一」型最优化问题（二者取一的最小损失、最大权闭合子图等）都归结为最小割。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{割 (Cut)：} 点集的一个划分 $V = S \cup T$，$s \in S$、$t \in T$；割的容量为所有 $u \in S \to v \in T$ 方向边的容量之和。
+  \item \textbf{最大流最小割定理：} 最小割容量 $=$ 最大流。任何 $s$-$t$ 流都必须跨越任何一个割，故最大流 $\le$ 任意割；而最大流结束时残量网络中 $t$ 不可达，其可达集恰好给出一个取等的割。
+  \item \textbf{割边方案：} 最大流跑完后，在残量网络上从 $s$ 再做一次 BFS 得可达集 $S$；所有满足 $u \in S$、$v \notin S$ 的原图边必然满流（否则 $v$ 也会被访问到），这些边整体构成一组最小割。
+  \item \textbf{方案不唯一：} 上述方法给出其中一组最小割边集；同一容量可能存在多种割法，题目要求特定方案（如字典序最小）时需另行处理。
+\end{itemize}
+
+\textbf{常见建模：}
+\begin{enumerate}
+  \item \textbf{点权转边权：} 点带代价/容量时拆成入点与出点，中间连一条容量为点权的边，即可把「删点」化为「割边」。
+  \item \textbf{最大权闭合子图：} 物品有正、负收益，选物品必须连同其依赖一起选。源点向每个正收益物品连容量为其收益的边，每个负收益物品向汇点连容量为其代价的边，依赖关系连容量 $\infty$ 的边；最大权和 $=$ 正收益总和 $-$ 最小割。
+\end{enumerate}
+
+\textbf{时间复杂度：} 同最大流（Dinic），附加一次 $O(n+m)$ 的 BFS 求可达集。
+
+\lstinputlisting[language=C++]{codes/07-networkflow-02.cpp}
+
+\subsection{最小费用最大流 (Minimum Cost Maximum Flow)}
+
+\textbf{用途：} 每条边在容量之外另有单位费用 $w$，在流量最大的前提下使总费用 $\sum_e f(e) \cdot w(e)$ 最小；亦可在流量达到指定值时提前停止。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{反向边费用为负：} 正边费用 $w$ 对应的反向边费用为 $-w$，沿反向边增广即退回流量并退还费用，与最大流的退流机制一致。
+  \item \textbf{连续最短增广路 (Successive Shortest Path, SSP)：} 每轮在残量网络中找一条 $s \to t$ 费用最小的增广路并推满。只要每轮都沿最短路增广，流量达到每个值时的费用都是最小的。
+  \item \textbf{SPFA 找最短路：} 反向边的负费用使残量网络含负权边，须用 SPFA（队列优化的 Bellman-Ford）而非 Dijkstra。约定初始网络不含负环，否则算法无法终止。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item SPFA 只经过剩余容量大于 $0$ 的边，求出最短路并记录每个点由哪条边到达（\code{pre}）。
+  \item 若 $t$ 不可达则结束；否则沿 \code{pre} 从 $t$ 回溯到 $s$，取路径上最小剩余容量为增广量。
+  \item 正边扣减、反向边增加该流量，累计流量与费用。
+\end{enumerate}
+
+\textbf{时间复杂度：} $O(f \cdot n \cdot m)$，$f$ 为最大流量（伪多项式）。
+
+\begin{quote}
+\textbf{注意：} 若需要的是流量恰好为 $f_0$ 的最小费用（而非最大流），累计流量达到 $f_0$ 时提前停止即可；输出每条边的流量同样用「容量 $-$ 剩余容量」。
+\end{quote}
+
+\lstinputlisting[language=C++]{codes/07-networkflow-03.cpp}
+
+\subsection{二分图匹配 (Bipartite Matching)}
+
+\textbf{用途：} 左部 $n$ 个点、右部 $m$ 个点、$k$ 条边，选出尽量多的两两不共端点的边；任务分配、棋盘覆盖等问题的经典模型。
+
+\subsubsection{匈牙利算法 (Hungarian Algorithm)}
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{交替路：} 从未匹配点出发，依次经过非匹配边、匹配边、非匹配边……的路径。
+  \item \textbf{增广路：} 首尾都是非匹配边的交替路。把路上边的是否匹配全部取反，匹配数恰好增加一。
+  \item \textbf{增广路定理：} 一个匹配是最大匹配，当且仅当图中不存在增广路。匈牙利算法按左部点依次尝试增广，正是该定理的直接运用。
+  \item \textbf{König 定理：} 二分图最大匹配数 $=$ 最小点覆盖数（最少选多少个点覆盖所有边），可由最大流最小割定理证明，常用于点、边问题的相互转化。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item 按左部点 $u = 1, \dots, n$ 依次尝试：DFS 访问 $u$ 的每个邻点 $v$。
+  \item $v$ 未被匹配则直接匹配；否则递归尝试为 $v$ 的当前匹配者另寻右点，成功则改配。
+  \item 每轮 DFS 用 \code{vis} 标记已访问的右点，防止成环重复访问。
+\end{enumerate}
+
+\textbf{时间复杂度：} $O(n \cdot k)$。规模大时改用 Dinic 建模：$s \to$ 左部容量 $1$、原图边容量 $1$、右部 $\to t$ 容量 $1$，单位容量下为 $O(k\sqrt{n})$，优于匈牙利。
+
+\lstinputlisting[language=C++]{codes/07-networkflow-04.cpp}
+
+\subsubsection{KM 算法 (Kuhn-Munkres Algorithm)}
+
+\textbf{用途：} 边带权的完全二分图上求权和最大的完美匹配（每个左部点都必须匹配），约定 $n \le m$。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{可行顶标：} 给左、右部点标数 $lx, ly$，满足 $lx[u] + ly[v] \ge w[u][v]$。任意完美匹配的权和不超过 $\sum lx + \sum ly$。
+  \item \textbf{相等子图：} 只保留满足 $lx[u] + ly[v] = w[u][v]$ 的边。若相等子图存在完美匹配，其权和恰为 $\sum lx + \sum ly$，达到上界，即为所求。
+  \item \textbf{顶标松弛：} 相等子图找不到完美匹配时，把已访问左部的 $lx$ 与已访问右部的 $ly$ 分别减、加同一个量 $d$，$d$ 取未访问右点中最小的 $lx[u]+ly[v]-w[u][v]$。松弛保持顶标可行性，且每轮至少让一条新边进入相等子图。
+  \item \textbf{slack 数组：} 记录每个未访问右点到所有已访问左点的最小差值，使 $d$ 的计算无需重新枚举所有点对，是复杂度达到 $O(n^2 m)$ 的关键。
+\end{itemize}
+
+\textbf{时间复杂度：} $O(n^2 m)$。
+
+\begin{quote}
+\textbf{注意：} 模板要求给出完全矩阵，不存在的边用足够小的权值填充，且权值绝对值约定不超过 $10^{15}$ 以防顶标运算溢出。求最小权完美匹配时把权值整体取负、答案再取负即可。
+\end{quote}
+
+\lstinputlisting[language=C++]{codes/07-networkflow-05.cpp}
+
+\subsection{上下界网络流 (Flow with Lower Bounds)}
+
+\textbf{用途：} 每条边的流量被限制在区间 $[\,lo, hi\,]$ 内，判断可行流是否存在，并在此前提下求 $s \to t$ 的最大流。
+
+\textbf{核心思想——拆下界：} 把「流量 $\ge lo$」的部分视为必须先满足的定量：原边容量改为 $hi - lo$，同时统计每个点因下界产生的「必须净流入」
+\[
+du[v] \;=\; \sum_{e=(u,v)} lo_e \;-\; \sum_{e=(v,u)} lo_e .
+\]
+$du[v] > 0$ 说明 $v$ 还缺 $du[v]$ 的进入量，连超级源 $ss \to v$ 容量 $du[v]$；$du[v] < 0$ 说明 $v$ 必须多流出 $-du[v]$，连 $v \to$ 超级汇 $tt$ 容量 $-du[v]$。跑 $ss \to tt$ 最大流，$ss$ 的出边全部满流 $\iff$ 原问题存在可行流，此时每条边的真实流量为 $lo$ 加上自由部分（容量 $hi-lo$ 的边）的实际流量。
+
+\textbf{三种经典转化：}
+\begin{enumerate}
+  \item \textbf{无源汇可行流（循环流）：} 直接按上述方法建图并判定满流。
+  \item \textbf{有源汇可行流：} 加一条 $t \to s$ 容量 $\infty$ 的边，化归为无源汇问题。
+  \item \textbf{有源汇最大流：} 在有源汇可行流的残量网络上（保留 $t \to s$ 无穷边），直接再跑一次 $s \to t$ 最大流，其结果即为答案——$t \to s$ 边上旧的可行流量会被反向边自然退还，无需单独统计。
+\end{enumerate}
+
+\begin{quote}
+\textbf{注意：} 有源汇\textbf{最小}流的方向相反：先跑可行流，再从 $t$ 向 $s$ 跑一次最大流「退掉」多余的循环流量，答案 $=$ 可行流量 $-$ 退掉的流量。
+\end{quote}
+
+\textbf{时间复杂度：} 两次 Dinic，$O(n^2 m)$。
+
+\lstinputlisting[language=C++]{codes/07-networkflow-06.cpp}

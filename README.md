@@ -16,6 +16,7 @@
     ├── 04-strings.tex         # 字符串
     ├── 05-geometry.tex        # 计算几何
     ├── 06-graph.tex           # 图论
+    ├── 07-networkflow.tex     # 网络流
     ├── 08-math.tex            # 数学
     ├── 09-offline.tex         # 离线算法
     ├── 10-utilities.tex       # 实用工具
