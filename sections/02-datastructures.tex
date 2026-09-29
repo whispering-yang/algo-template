@@ -85,6 +85,74 @@
 \textbf{使用示例：}
 对数组 \texttt{init\_values[1..n]} 建树后，调用 \texttt{range\_add(1, 1, n, l, r, k)} 将区间 $[l,r]$ 全部加上 $k$，调用 \texttt{range\_query(1, 1, n, l, r)} 查询区间和。实际使用时可根据需求修改 \texttt{MAXN}，或加入取模操作。
 
+\subsection{动态开点线段树 (Dynamic Segment Tree)}
+
+\textbf{用途：}
+当值域很大（如 $10^9$）或下标稀疏时，不做离散化直接在值域上建线段树：节点只在首次被访问时创建，$q$ 次单点修改只产生 $O(q \log V)$ 个节点。经典应用：大值域计数、权值线段树第 $k$ 小，以及作为可持久化线段树、线段树合并/分裂的基础结构。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{按需开点：} 不再使用 $node \times 2$、$node \times 2 + 1$ 的静态编号，而是用 \code{lc} / \code{rc} 数组显式记录儿子编号，访问到空儿子时才 \code{++node\_cnt} 新建节点。
+  \item \textbf{空节点约定：} 编号 $0$ 表示空节点，全局数组零初始化使得 \code{lc[0] = rc[0] = cnt[0] = 0}，空儿子可以直接当作权值为 $0$ 的节点参与运算，查询遇空返回 $0$。
+  \item \textbf{值域防溢出：} 值域上界达到 $10^9$ 时 $l + r$ 可能超出 \code{int} 范围，中点应写成 $l + \big((r - l) \gg 1\big)$。
+  \item \textbf{空间估算：} 每次单点修改至多新建 $\lceil \log_2 V \rceil$ 个节点，节点池按修改次数上界的 $32$ 倍开设。
+\end{itemize}
+
+\textbf{时间复杂度：} 单点修改、区间查询、第 $k$ 小均为 $O(\log V)$；空间 $O(q \log V)$（$q$ 为修改次数）。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-11.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+  \item 模板维护的是\textbf{权值线段树}（计数）；若单次修改的权值很大或总计数超出 \code{int}，把 \code{cnt} 改为 \code{int64\_t}。
+  \item 若需支持\textbf{区间加}等懒惰标记操作，\code{push\_down} 下传标记时必须为缺失的儿子\textbf{开点}（先新建节点再打标记），其余与普通线段树一致。
+  \item 全局第 $k$ 小要求 $1 \le k \le \code{cnt[root]}$，否则行为未定义。
+\end{itemize}
+
+\subsection{线段树合并与分裂 (Segment Tree Merge / Split)}
+
+\textbf{用途：}
+维护\textbf{多棵}定义在同一值域上的动态开点权值线段树，支持把两棵树合并成一棵、把一棵树中某段值域分裂成新树。经典应用：
+\begin{itemize}
+  \item 图上/树上连通块或子树的权值统计与第 $k$ 小（如洛谷 P3224「永无乡」，可代替树上启发式合并）；
+  \item 维护可重集的动态拆分与合并（如洛谷 P5494【模板】线段树分裂）；
+  \item 按排名分裂还可解决区间排序问题（如 P2824 [HEOI2016] 排序）。
+\end{itemize}
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{合并 \code{merge(x, y)}：} 把树 $y$ 并入树 $x$。若一方为空直接返回另一方（\textbf{不再递归}）；否则递归合并左右儿子，并把 $y$ 的信息累加到 $x$ 上。合并\textbf{复用}节点、不新建，完成后 $y$ 作废。
+  \item \textbf{分裂 \code{split}：} 把树中值域 $[ql, qr]$ 的部分抽成一棵新树。若当前子树完全落在 $[ql, qr]$ 内则\textbf{整棵搬走}（零拷贝）；否则新建一个节点，只向与区间相交的儿子递归。
+  \item \textbf{两种分裂形式等价：} 除按值域区间分裂外，也常实现为按「前 $k$ 小」分裂（保留最小的 $k$ 个、其余拆出）：先查询前缀计数确定值域边界，再用区间分裂即可，二者可互相实现。
+\end{itemize}
+
+\textbf{分裂流程：}
+\begin{enumerate}
+  \item 若当前节点为空，返回空树。
+  \item 若当前子树的值域完全包含于 $[ql, qr]$，整棵子树移给新树，原处置为空。
+  \item 否则新建新树节点，向与 $[ql, qr]$ 相交的儿子递归分裂。
+  \item 自底向上维护两棵树的 \code{cnt}：新树取子节点之和，原树减去被抽走的部分。
+\end{enumerate}
+
+\textbf{时间复杂度：}
+\begin{itemize}
+  \item 单次合并的递归只会在\textbf{两棵树都存在}的节点处展开，访问的节点对数不超过较小树的节点数，即 $O(\min(|T_1|, |T_2|))$；且合并只销毁节点、不新建，故 $n$ 次插入与 $q$ 次合并/分裂的总复杂度均摊 $O((n + q) \log V)$。
+  \item 单次分裂只沿值域区间的两条边界路径新建节点，复杂度 $O(\log V)$。
+\end{itemize}
+
+\lstinputlisting[language=C++]{codes/02-datastructures-12.cpp}
+
+\lstinputlisting[language=C++]{codes/02-datastructures-13.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+  \item \textbf{绝不能把一棵树与自身合并}（\code{merge(x, x)} 会重复计数并破坏结构）：图上加边、树上合并子树前，先判断两端是否已属同一集合。
+  \item 合并会作废 $y$ 的独立性；若之后还要访问旧版本，需改为可持久化写法（每层递归新建节点）。
+  \item 节点池大小按「初始建树 $O(n)$ + 每次分裂/插入 $O(\log V)$」估算；P5494 的计数总量可达 $4 \times 10^{10}$，\code{cnt} 必须用 \code{int64\_t}。
+  \item 12 号代码为「永无乡」完整实现：每个连通块一棵权值线段树，加边时合并两棵树，查询时在树上下行找第 $k$ 小。
+  \item 13 号代码为 P5494 的完整操作集（分裂 / 合并 / 插入 / 区间计数 / 第 $k$ 小）。
+\end{itemize}
+
 \subsection{李超线段树 (Li Chao Segment Tree)}
 
 \textbf{用途：}
