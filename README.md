@@ -16,11 +16,11 @@
     ├── 04-strings.tex         # 字符串
     ├── 05-geometry.tex        # 计算几何
     ├── 06-graph.tex           # 图论
-    ├── 07-math.tex            # 数学
-    ├── 08-offline.tex         # 离线算法
-    ├── 09-utilities.tex       # 实用工具
-    ├── 10-debug.tex           # 本地调试
-    └── 11-optimization.tex    # 常数优化
+    ├── 08-math.tex            # 数学
+    ├── 09-offline.tex         # 离线算法
+    ├── 10-utilities.tex       # 实用工具
+    ├── 11-debug.tex           # 本地调试
+    └── 12-optimization.tex    # 常数优化
 ```
 
 ## 编译
