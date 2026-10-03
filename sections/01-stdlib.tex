@@ -55,7 +55,7 @@ C++20 在标准库中引入了位操作辅助函数，适用于无符号整数�
 
 \subsubsection{前导零与后缀零}
 
-\code{std::countl\_zero(x)} 返回二进制表示中高位（左侧）连续的 0 的个数，\code{std::countr\_zero(x)} 返回低位（右侧）连续的 0 的个数。
+\code{std::countl\_zero(x)} 返回二进制表示中高位（左侧）连续 0 的个数，\code{std::countr\_zero(x)} 返回低位（右侧）连续 0 的个数。
 
 \begin{tabular}{|l|l|}
   \hline
@@ -99,13 +99,13 @@ GCC/Clang 的扩展函数提供类似功能，但需要注意零输入的行为�
 
 GCC/Clang 内建函数：
 
-\begin{tabular}{|l|l|}
+\noindent\begin{tabularx}{\textwidth}{|l|>{\raggedright\arraybackslash}X|}
   \hline
   功能 & GCC/Clang 内建函数 \\
   \hline
   1 的个数 & \code{\_\_builtin\_popcount(x)}, \code{\_\_builtin\_popcountl(x)}, \code{\_\_builtin\_popcountll(x)} \\
   \hline
-\end{tabular}
+\end{tabularx}
 
 \subsubsection{对齐与位宽}
 
@@ -141,7 +141,7 @@ C++20 还提供了一组和 2 的幂、位宽相关的函数，常用于数论�
 \textbf{头文件}
 \lstinputlisting[language=C++]{codes/01-stdlib-03.cpp}
 
-C++ 标准库提供了对复数的支持，主要通过模板类 \code{std::complex<T>}（通常使用 \code{T = double}）。常见功能包括复数构造、模和幅角计算、共轭、实部虚部访问，以及与复数相关的数学函数。
+C++ 标准库提供了对复数的支持，通过模板类 \code{std::complex<T>}（通常使用 \code{T = double}）。常见功能包括复数构造、模和幅角计算、共轭、实部虚部访问，以及与复数相关的数学函数。
 
 \begin{tabular}{|l|l|}
   \hline

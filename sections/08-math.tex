@@ -97,7 +97,7 @@ $\omega_n^{n/2} = -1$ & $e^{\pi i} = -1$ & $g^{(P-1)/2} \equiv -1$ \\
 
 \textbf{核心思想：}
 \begin{itemize}
-    \item 迭代 FFT/NTT 的蝴蝶操作有两种方向，\textbf{都不需要预先重排}。\textbf{按频率抽取 (DIF, Decimation-In-Frequency)}：输入自然序，输出自动变为位逆序；\textbf{按时间抽取 (DIT, Decimation-In-Time)}：输入位逆序，输出自动恢复自然序。
+    \item 蝴蝶操作有两种方向，\textbf{均无需预先重排}。\textbf{按频率抽取 (DIF, Decimation-In-Frequency)}：输入自然序，输出自动变为位逆序；\textbf{按时间抽取 (DIT, Decimation-In-Time)}：输入位逆序，输出自动恢复自然序。
     \item DIF 与 DIT 互为转置，蝴蝶形状不同：DIF \textbf{先加减、后乘旋转因子}，得到 $(u+v,\ (u-v)\,\omega^{k})$，层长从大到小枚举；DIT \textbf{先乘旋转因子、后加减}，得到 $(u+v\omega^{k},\ u-v\omega^{k})$，层长从小到大枚举。
     \item 卷积的逐点相乘与下标顺序无关：记 $R$ 为位逆序置换矩阵，$F$ 为 DFT 矩阵，则 DIF 实现的是 $R\cdot F$；而置换是逐下标作用，$(Rx)\odot(Ry)=R(x\odot y)$，位逆序的点值逐点相乘后\textbf{仍是位逆序}。
     \item 逆 DIT 恰好实现 $F^{-1}\cdot R$（输入位逆序、输出自然序）。于是「DIF 正变换 $\to$ 逐点相乘 $\to$ DIT 逆变换」完美衔接：\[F^{-1}R\big((RFA)\odot(RFB)\big)=F^{-1}\big((FA)\odot(FB)\big)=A\cdot B,\] 位逆序状态只存在于中间，任何显式置换都不需要。

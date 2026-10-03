@@ -172,9 +172,10 @@
 
 \textbf{说明：}
 \begin{itemize}
-  \item 代码中 `XMAX` 为横坐标值域大小（右开区间 $[0, X)$），需按题目修改。
-  \item `add\_segment` 支持插入线段到指定横坐标区间，若为全局直线可调用 `add\_line` 或 `add\_segment(lid, 0, XMAX)`。
-  \item 查询返回的是线段编号，可通过 `ls[ans]` 获取具体值。如需最小值，将 `cmp` 中的判定符号取反即可。
+  \item 代码中 \code{XMAX} 为横坐标值域大小（右开区间 $[0, X)$），需按题目修改。
+  \item \code{add\_segment} 向指定横坐标区间插入线段。
+  \item 插入全局直线可直接调用 \code{add\_line}，或等价地调用 \code{add\_segment(lid, 0, XMAX)}。
+  \item 查询返回的是线段编号，可通过 \code{ls[ans]} 获取具体值。如需最小值，将 \code{cmp} 中的判定符号取反即可。
   \item 横坐标需为整数，值域不宜过大（通常 $\le 10^6$，可通过离散化优化）。
 \end{itemize}
 
@@ -312,7 +313,7 @@
 
 \textbf{核心概念：}
 \begin{itemize}
-  \item \textbf{随机优先级：} 每个节点赋予一个随机优先级，通过 \texttt{merge} 维护堆性质，保证树高期望 $O(\log n)$。
+  \item \textbf{随机优先级：} 每个节点赋予一个随机优先级，以 \texttt{merge} 维护堆性质，保证树高期望 $O(\log n)$。
   \item \textbf{分裂 (split)：} 按值 $val$ 将树拆分成两棵子树 $x$（$\le val$）和 $y$（$> val$）。
   \item \textbf{合并 (merge)：} 合并两棵子树，保证左树所有值 $\le$ 右树所有值，按优先级维护堆结构。
 \end{itemize}
