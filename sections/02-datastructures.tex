@@ -256,7 +256,53 @@
             \item $32$ 是 $2$ 的幂次，方便编译器优化且语义清晰，已成为竞赛社区的通用经验值。代码中 `MAXN << 5`（乘以 $32$）是典型的写法。
           \end{itemize}
   \item 查询时同时传入 $\text{root}[l-1]$ 和 $\text{root}[r]$，利用前缀和思想得到区间内的权值线段树。
-  \item 如需支持单点修改的历史版本查询（可持久化数组），可将 \texttt{cnt} 替换为具体值，修改 \texttt{insert} 逻辑即可。
+  \item 单点修改 + 任意历史版本单点查询（即可持久化数组）是其最直接的应用，见下节模板。
+\end{itemize}
+
+\subsection{可持久化数组 (Persistent Array)}
+
+\textbf{用途：}
+支持单点修改，并查询\textbf{任意历史版本}中某位置的值（洛谷 P3919【模板】可持久化数组）。它把可持久化线段树维护的信息从区间计数换成叶子处的值，是该结构最直接的应用，同时也是可持久化并查集的基础。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{路径克隆：} 单点修改只影响根到该叶子路径上的 $O(\log n)$ 个节点，新版本只克隆这些节点，其余子树与旧版本共享，旧版本完全不受影响。
+  \item \textbf{只读查询：} 在指定版本的根上按位置向下走到叶子即可，不产生任何新节点。
+  \item \textbf{版本即根指针：} 一个「版本」就是一个根节点编号。若题目约定查询也生成版本（如 P3919），令新版本直接复制所查版本的根指针，代价 $O(1)$。
+\end{itemize}
+
+\textbf{时间复杂度：} 建树 $O(n)$；单点修改 $O(\log n)$，新增 $O(\log n)$ 个节点；单点查询 $O(\log n)$。总空间 $O(n + m\log n)$（$m$ 为修改次数）。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-14.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+  \item 节点池估算：建树产生 $2n - 1$ 个节点（$n$ 个叶子的二叉树），每次修改克隆 $\lceil \log_2 n \rceil + 1$ 个，模板按 $2N + 20M$ 开设，使用时按题目范围调整。
+  \item 若还需维护区间信息（如历史版本上的区间和），给内部节点补一个 \code{sum} 域并在克隆时自底向上汇总即可，整体框架不变。
+\end{itemize}
+
+\subsection{可持久化并查集 (Persistent DSU)}
+
+\textbf{用途：}
+支持查询任意历史版本中两元素的连通性，也可回退到历史状态后继续合并（洛谷 P3402【模板】可持久化并查集）。实现方式：把并查集的 \code{fa} 与 \code{siz} 数组放进一棵可持久化数组。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{禁用路径压缩：} 路径压缩的均摊复杂度建立在「同一棵树被反复修改」的前提上，而可持久化场景中旧版本会被反复访问，均摊保证失效。因此只采用\textbf{按大小合并}，保证树高 $O(\log n)$。
+  \item \textbf{合并 = 两次单点修改：} 把小树根 $x$ 挂到大树根 $y$ 上需修改 \code{fa[x]} 与 \code{siz[y]} 两个位置，即两次可持久化数组单点修改，各克隆 $O(\log n)$ 个节点；第二次修改基于第一次的返回值串联，使一次合并只产生一个新根。
+  \item \textbf{find 严格只读：} 每跳一次父指针需一次 $O(\log n)$ 的叶子定位，而树高为 $O(\log n)$，故单次 \code{find} 为 $O(\log^2 n)$（常数很小）。
+  \item \textbf{版本回退 $O(1)$：} 回到历史状态只需复制根指针 \code{rt[i] = rt[k]}，不产生新节点。
+\end{itemize}
+
+\textbf{时间复杂度：} 单次合并 / 查询 $O(\log^2 n)$；空间 $O(n + m\log n)$（$m$ 为合并次数）。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-15.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+  \item 节点池估算：建树 $2n$，每次合并两处单点修改合计约 $2(\lceil \log_2 n \rceil + 1)$ 个节点，模板按 $2N + 40M$ 开设（P3402 中 $n \le 10^5$、$m \le 2 \times 10^5$）。
+  \item 已连通时 \code{unite} 直接返回原根，新旧版本共享整棵树，不消耗节点。
+  \item 若只在\textbf{最新版本}上操作且无需回退，普通并查集（路径压缩 + 按秩合并）更简单高效；可持久化仅在需要访问历史版本时使用。
 \end{itemize}
 
 \subsection{FHQ Treap (无旋 Treap)}
