@@ -7,7 +7,7 @@
 // 转化：记 du[v] = v 的「必须流入 - 必须流出」。
 //   1) 原边容量改为 hi - lo，另加 t->s 无穷边，把有源汇化为无源汇循环流；
 //   2) du[v] > 0 时连 ss->v 容量 du[v]，du[v] < 0 时连 v->tt 容量 -du[v]；
-//   3) 跑 ss->tt 最大流，ss 的出边全部满流 <=> 存在可行流；
+//   3) 跑 ss->tt 最大流，流量等于正 du 之和（即 ss 的出边全部满流）<=> 存在可行流；
 //   4) 再直接在残量网络上跑 s->t 最大流，其结果即为答案（t->s 边上的旧流量
 //      会被反向边自然退还，无需单独统计）。
 // 复杂度：两次 Dinic，O(n^2 m)。
@@ -15,104 +15,132 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+constexpr int64_t INF = 4e18;
+
 struct Dinic {
     struct Edge {
-        int to;
-        int64_t cap;
+        int to = 0;
+        int64_t cap = 0LL;
+        int nxt = -1;
     };
-    static constexpr int64_t INF = INT64_MAX / 2;
 
-    vector<Edge> e;
-    vector<vector<int>> g;
-    vector<int> level, cur;
+    int s, t;
+    vector<Edge> edg;
+    vector<int> head, cur, dst;
 
-    explicit Dinic(int n) : g(n + 1), level(n + 1), cur(n + 1) {}
+    Dinic(int n) : edg(0), head(n + 1, -1), cur(n + 1, -1), dst(n + 1, -1) {}
 
-    int add(int u, int v, int64_t cap) {
-        g[u].push_back(e.size());
-        e.push_back({v, cap});
-        g[v].push_back(e.size());
-        e.push_back({u, 0});
-        return e.size() - 2;  // 正边下标
+    void add_edge(int u, int v, int64_t cap) {
+        edg.emplace_back(v, cap, head[u]);
+        head[u] = int(edg.size()) - 1;
+        edg.emplace_back(u, 0, head[v]);
+        head[v] = int(edg.size()) - 1;
     }
 
-    bool bfs(int s, int t) {
-        fill(level.begin(), level.end(), -1);
-        queue<int> q;
-        level[s] = 0;
-        q.push(s);
-        while (!q.empty()) {
-            int u = q.front();
-            q.pop();
-            for (int id : g[u]) {
-                if (e[id].cap > 0 && level[e[id].to] == -1) {
-                    level[e[id].to] = level[u] + 1;
-                    q.push(e[id].to);
-                }
+    bool bfs() {
+        fill(dst.begin(), dst.end(), -1);
+        dst[s] = 0;
+
+        queue<int> qu;
+        qu.push(s);
+
+        while (!qu.empty()) {
+            int u = qu.front();
+            qu.pop();
+
+            for (int j = head[u]; j != -1; j = edg[j].nxt) {
+                if (edg[j].cap <= 0LL) continue;
+                if (dst[edg[j].to] >= 0) continue;
+
+                qu.push(edg[j].to);
+                dst[edg[j].to] = dst[u] + 1;
             }
         }
-        return level[t] != -1;
+
+        return dst[t] != -1;
     }
 
-    int64_t dfs(int u, int t, int64_t limit) {
+    int64_t dfs(int u, int64_t limit) {
         if (u == t) return limit;
-        for (int& i = cur[u]; i < (int)g[u].size(); ++i) {
-            int id = g[u][i], v = e[id].to;
-            if (e[id].cap > 0 && level[v] == level[u] + 1) {
-                int64_t d = dfs(v, t, min(limit, e[id].cap));
-                if (d > 0) {
-                    e[id].cap -= d;
-                    e[id ^ 1].cap += d;
-                    return d;
-                }
-            }
+
+        int64_t pushed = 0LL;
+        for (int &j = cur[u]; j != -1; j = edg[j].nxt) {
+            int v = edg[j].to;
+
+            if (edg[j].cap <= 0 || dst[v] != dst[u] + 1) continue;
+
+            int64_t canPush = min(limit - pushed, edg[j].cap);
+            int64_t sent = dfs(v, canPush);
+
+            edg[j].cap -= sent;
+            edg[j ^ 1].cap += sent;
+            pushed += sent;
+
+            if (pushed == limit) break;
         }
-        return 0;
+
+        if (pushed == 0) dst[u] = -1;
+        return pushed;
     }
 
-    int64_t maxflow(int s, int t) {
-        int64_t total = 0;
-        while (bfs(s, t)) {
-            fill(cur.begin(), cur.end(), 0);
-            while (int64_t f = dfs(s, t, INF)) total += f;
+    int64_t max_flow(int source, int sink) {
+        s = source;
+        t = sink;
+
+        int64_t flow = 0LL;
+
+        while (bfs()) {
+            cur = head;
+
+            int64_t pushed;
+            while ((pushed = dfs(s, INF)) > 0LL) {
+                flow += pushed;
+            }
         }
-        return total;
+
+        return flow;
     }
 };
 
 int main() {
-    ios::sync_with_stdio(false);
     cin.tie(nullptr);
+    ios::sync_with_stdio(false);
 
     int n, m, s, t;
     cin >> n >> m >> s >> t;
-    Dinic din(n + 2);
+
+    Dinic dnc(n + 2);
     int ss = n + 1, tt = n + 2;
 
-    vector<int64_t> du(n + 1, 0);  // 必须流入 - 必须流出
-    for (int i = 0; i < m; ++i) {
+    vector<int64_t> du(n + 1, 0LL);  // 必须流入 - 必须流出
+
+    for (int _ = 0; _ < m; _++) {
         int u, v;
         int64_t lo, hi;
         cin >> u >> v >> lo >> hi;
-        din.add(u, v, hi - lo);
+        dnc.add_edge(u, v, hi - lo);
         du[u] -= lo;
         du[v] += lo;
     }
-    din.add(t, s, Dinic::INF);  // 化为无源汇循环流
 
-    vector<int> ssEdges;  // 超级源的所有出边下标，用于满流判定
-    for (int v = 1; v <= n; ++v) {
-        if (du[v] > 0) ssEdges.push_back(din.add(ss, v, du[v]));
-        else if (du[v] < 0) din.add(v, tt, -du[v]);
+    dnc.add_edge(t, s, INF);  // 化为无源汇循环流
+
+    int64_t need = 0LL;  // 超级源出边容量之和，用于满流判定
+    for (int v = 1; v <= n; v++) {
+        if (du[v] > 0LL) {
+            dnc.add_edge(ss, v, du[v]);
+            need += du[v];
+        } else if (du[v] < 0LL) {
+            dnc.add_edge(v, tt, -du[v]);
+        }
     }
 
-    din.maxflow(ss, tt);
-    for (int id : ssEdges)
-        if (din.e[id].cap > 0) {
-            cout << "impossible\n";
-            return 0;
-        }
+    if (dnc.max_flow(ss, tt) != need) {
+        cout << "impossible\n";
+        return 0;
+    }
 
-    cout << din.maxflow(s, t) << '\n';
+    cout << dnc.max_flow(s, t) << '\n';
+
     return 0;
 }

@@ -14,24 +14,27 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+constexpr int64_t INF = 4e18;
+
 struct KM {
     int n, m;
     vector<vector<int64_t>> w;
     vector<int64_t> lx, ly, slack;  // slack[v]：本轮所有已访问左点到 v 的最小差值
     vector<bool> visx, visy;
     vector<int> matchy;             // 右点匹配到的左点，0 表示未匹配
-    static constexpr int64_t INF = INT64_MAX / 4;
 
     KM(int n, int m) : n(n), m(m), w(n + 1, vector<int64_t>(m + 1)),
-                       lx(n + 1, 0), ly(m + 1, 0), slack(m + 1, INF),
+                       lx(n + 1, 0LL), ly(m + 1, 0LL), slack(m + 1, INF),
                        visx(n + 1, false), visy(m + 1, false), matchy(m + 1, 0) {}
 
     bool dfs(int u) {
         visx[u] = true;
-        for (int v = 1; v <= m; ++v) {
+
+        for (int v = 1; v <= m; v++) {
             if (visy[v]) continue;
+
             int64_t diff = lx[u] + ly[v] - w[u][v];
-            if (diff == 0) {  // 相等边：可进入交替路
+            if (diff == 0LL) {  // 相等边：可进入交替路
                 visy[v] = true;
                 if (!matchy[v] || dfs(matchy[v])) {
                     matchy[v] = u;
@@ -41,46 +44,56 @@ struct KM {
                 slack[v] = min(slack[v], diff);
             }
         }
+
         return false;
     }
 
     int64_t solve() {
-        for (int i = 1; i <= n; ++i)
-            for (int j = 1; j <= m; ++j) lx[i] = max(lx[i], w[i][j]);
+        for (int i = 1; i <= n; i++)
+            for (int j = 1; j <= m; j++) lx[i] = max(lx[i], w[i][j]);
 
-        for (int i = 1; i <= n; ++i) {
+        for (int i = 1; i <= n; i++) {
             while (true) {
                 fill(slack.begin(), slack.end(), INF);
                 fill(visx.begin(), visx.end(), false);
                 fill(visy.begin(), visy.end(), false);
+
                 if (dfs(i)) break;
+
                 // 未找到增广路：顶标松弛量 d 取未访问右点的最小 slack
                 int64_t d = INF;
-                for (int v = 1; v <= m; ++v)
+                for (int v = 1; v <= m; v++)
                     if (!visy[v]) d = min(d, slack[v]);
-                for (int u = 1; u <= n; ++u)
+
+                for (int u = 1; u <= n; u++)
                     if (visx[u]) lx[u] -= d;
-                for (int v = 1; v <= m; ++v)
+
+                for (int v = 1; v <= m; v++)
                     if (visy[v]) ly[v] += d;
             }
         }
 
-        int64_t ans = 0;
-        for (int v = 1; v <= m; ++v)
+        int64_t ans = 0LL;
+        for (int v = 1; v <= m; v++)
             if (matchy[v]) ans += w[matchy[v]][v];
+
         return ans;
     }
 };
 
 int main() {
-    ios::sync_with_stdio(false);
     cin.tie(nullptr);
+    ios::sync_with_stdio(false);
 
     int n, m;
     cin >> n >> m;
+
     KM km(n, m);
-    for (int i = 1; i <= n; ++i)
-        for (int j = 1; j <= m; ++j) cin >> km.w[i][j];
+
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++) cin >> km.w[i][j];
+
     cout << km.solve() << '\n';
+
     return 0;
 }

@@ -14,46 +14,54 @@ using namespace std;
 
 struct Hungary {
     int n, m;
-    vector<vector<int>> g;  // 左点的邻接表（存右点编号）
-    vector<int> matchy;     // 右点匹配到的左点，0 表示未匹配
-    vector<bool> vis;       // 本轮 DFS 已访问的右点
+    vector<vector<int>> g;   // 左点的邻接表（存右点编号）
+    vector<int> matchy;      // 右点匹配到的左点，0 表示未匹配
+    vector<bool> vis;        // 本轮 DFS 已访问的右点
 
     Hungary(int n, int m) : n(n), m(m), g(n + 1), matchy(m + 1, 0), vis(m + 1, false) {}
 
     bool dfs(int u) {
         for (int v : g[u]) {
             if (vis[v]) continue;
+
             vis[v] = true;
             if (!matchy[v] || dfs(matchy[v])) {  // v 空闲，或其匹配者能改配其他右点
                 matchy[v] = u;
                 return true;
             }
         }
+
         return false;
     }
 
     int matching() {
         int ans = 0;
-        for (int u = 1; u <= n; ++u) {
+
+        for (int u = 1; u <= n; u++) {
             fill(vis.begin(), vis.end(), false);
-            if (dfs(u)) ++ans;
+            if (dfs(u)) ans++;
         }
+
         return ans;
     }
 };
 
 int main() {
-    ios::sync_with_stdio(false);
     cin.tie(nullptr);
+    ios::sync_with_stdio(false);
 
     int n, m, k;
     cin >> n >> m >> k;
-    Hungary hg(n, m);
-    for (int i = 0; i < k; ++i) {
+
+    Hungary hun(n, m);
+
+    for (int _ = 0; _ < k; _++) {
         int u, v;
         cin >> u >> v;
-        hg.g[u].push_back(v);
+        hun.g[u].push_back(v);
     }
-    cout << hg.matching() << '\n';
+
+    cout << hun.matching() << '\n';
+
     return 0;
 }

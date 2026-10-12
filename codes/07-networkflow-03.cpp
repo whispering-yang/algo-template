@@ -10,86 +10,108 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+constexpr int64_t INF = 4e18;
+
 struct MCMF {
     struct Edge {
-        int to;
-        int64_t cap, cost;
+        int to = 0;
+        int64_t cap = 0LL;
+        int64_t cost = 0LL;
+        int nxt = -1;
     };
-    static constexpr int64_t INF = INT64_MAX / 2;
 
-    vector<Edge> e;
-    vector<vector<int>> g;
-    vector<int64_t> dist;   // SPFA 最短路
-    vector<int> pre;        // pre[v]：当前最短路树上到达 v 的边下标
+    int s, t;
+    vector<Edge> edg;
+    vector<int> head, pre;      // pre[v]：当前最短路树上到达 v 的边下标
+    vector<int64_t> dst;        // SPFA 最短路
     vector<bool> inq;
 
-    explicit MCMF(int n) : g(n + 1), dist(n + 1), pre(n + 1), inq(n + 1) {}
+    MCMF(int n) : edg(0), head(n + 1, -1), pre(n + 1, -1), dst(n + 1, INF), inq(n + 1, false) {}
 
-    void add(int u, int v, int64_t cap, int64_t cost) {
-        g[u].push_back(e.size());
-        e.push_back({v, cap, cost});
-        g[v].push_back(e.size());
-        e.push_back({u, 0, -cost});  // 反向边：撤销单位流量，费用同时退还
+    void add_edge(int u, int v, int64_t cap, int64_t cost) {
+        edg.emplace_back(v, cap, cost, head[u]);
+        head[u] = int(edg.size()) - 1;
+        edg.emplace_back(u, 0LL, -cost, head[v]);  // 反向边：撤销单位流量，费用同时退还
+        head[v] = int(edg.size()) - 1;
     }
 
-    bool spfa(int s, int t) {
-        fill(dist.begin(), dist.end(), INF);
+    bool spfa() {
+        fill(dst.begin(), dst.end(), INF);
         fill(inq.begin(), inq.end(), false);
-        queue<int> q;
-        dist[s] = 0;
+
+        dst[s] = 0LL;
         inq[s] = true;
-        q.push(s);
-        while (!q.empty()) {
-            int u = q.front();
-            q.pop();
+
+        queue<int> qu;
+        qu.push(s);
+
+        while (!qu.empty()) {
+            int u = qu.front();
+            qu.pop();
             inq[u] = false;
-            for (int id : g[u]) {
-                int v = e[id].to;
-                if (e[id].cap > 0 && dist[u] + e[id].cost < dist[v]) {
-                    dist[v] = dist[u] + e[id].cost;
-                    pre[v] = id;
-                    if (!inq[v]) {
-                        inq[v] = true;
-                        q.push(v);
-                    }
-                }
+
+            for (int j = head[u]; j != -1; j = edg[j].nxt) {
+                int v = edg[j].to;
+
+                if (edg[j].cap <= 0LL) continue;
+                if (dst[u] + edg[j].cost >= dst[v]) continue;
+
+                dst[v] = dst[u] + edg[j].cost;
+                pre[v] = j;
+
+                if (inq[v]) continue;
+
+                inq[v] = true;
+                qu.push(v);
             }
         }
-        return dist[t] != INF;
+
+        return dst[t] != INF;
     }
 
-    pair<int64_t, int64_t> mcmf(int s, int t) {
-        int64_t flow = 0, cost = 0;
-        while (spfa(s, t)) {
+    pair<int64_t, int64_t> mcmf(int source, int sink) {
+        s = source;
+        t = sink;
+
+        int64_t flow = 0LL, cost = 0LL;
+
+        while (spfa()) {
             int64_t aug = INF;
-            for (int v = t; v != s; v = e[pre[v] ^ 1].to)  // e[pre[v]^1].to 即路径上的前驱点
-                aug = min(aug, e[pre[v]].cap);
-            for (int v = t; v != s; v = e[pre[v] ^ 1].to) {
-                e[pre[v]].cap -= aug;
-                e[pre[v] ^ 1].cap += aug;
+            for (int v = t; v != s; v = edg[pre[v] ^ 1].to) {  // edg[pre[v]^1].to 即路径上的前驱点
+                aug = min(aug, edg[pre[v]].cap);
             }
+
+            for (int v = t; v != s; v = edg[pre[v] ^ 1].to) {
+                edg[pre[v]].cap -= aug;
+                edg[pre[v] ^ 1].cap += aug;
+            }
+
             flow += aug;
-            cost += aug * dist[t];
+            cost += aug * dst[t];
         }
+
         return {flow, cost};
     }
 };
 
 int main() {
-    ios::sync_with_stdio(false);
     cin.tie(nullptr);
+    ios::sync_with_stdio(false);
 
     int n, m, s, t;
     cin >> n >> m >> s >> t;
+
     MCMF mc(n);
-    for (int i = 0; i < m; ++i) {
+
+    for (int _ = 0; _ < m; _++) {
         int u, v;
         int64_t cap, cost;
         cin >> u >> v >> cap >> cost;
-        mc.add(u, v, cap, cost);
+        mc.add_edge(u, v, cap, cost);
     }
 
     auto [flow, cost] = mc.mcmf(s, t);
     cout << flow << ' ' << cost << '\n';
+
     return 0;
 }

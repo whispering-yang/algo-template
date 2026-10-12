@@ -11,14 +11,14 @@
   \item \textbf{残量网络 (Residual Network)：} 对每条边维护剩余容量 $c_f(u,v)=c(u,v)-f(u,v)$。实现时为每条正边配一条初始容量为 $0$ 的反向边，正边推流的同时增大反向边容量。
   \item \textbf{反向边与退流：} 反向边容量记录已推送的流量，沿反向边增广即撤销（反悔）先前路径上的部分流量。没有反向边，贪心增广可能把流量「堵死」在错误的路径上而丢失最优解。
   \item \textbf{增广路 (Augmenting Path)：} 残量网络中一条 $s \to t$ 的路径，路径上最小的剩余容量就是本次可增广的流量。
-  \item \textbf{层次图与多路增广：} 每轮先用 BFS 给残量网络分层（\code{level} 为点到 $s$ 的 BFS 距离），DFS 只沿层次恰好增加 $1$ 的边推进，一次 DFS 可沿多条路径送流。
+  \item \textbf{层次图与多路增广：} 每轮先用 BFS 给残量网络分层（\code{dst} 为点到 $s$ 的 BFS 距离），DFS 只沿层次恰好增加 $1$ 的边推进，一次 DFS 可沿多条路径送流。
   \item \textbf{当前弧优化：} 用 \code{cur[u]} 记录点 $u$ 已扫描到的出边下标；某条出边已无法再送出流量时，本轮内不再重复检查。
   \item \textbf{最大流最小割定理 (Max-Flow Min-Cut Theorem)：} $s$-$t$ 最大流的值等于 $s$-$t$ 最小割的容量（见下一小节）。
 \end{itemize}
 
 \textbf{算法流程：}
 \begin{enumerate}
-  \item \code{add(u,v,c)} 成对加入正边与反向边，两边的下标异或 $1$ 即互为对方。
+  \item \code{add\_edge(u,v,c)} 成对加入正边与反向边，两边的下标异或 $1$ 即互为对方。
   \item 从 $s$ 出发 BFS 分层；若 $t$ 不可达则算法结束。
   \item 重置当前弧，DFS 在层次图上多路增广，流量沿递归回传并同步修改正反边容量。
   \item 累计各轮增广量，直至 BFS 无法到达 $t$。
@@ -27,7 +27,7 @@
 \textbf{时间复杂度：} 一般图 $O(n^2 m)$；单位容量图（如二分图匹配建模）$O(m\sqrt{n})$。实际运行速度远好于上界，是竞赛中的默认选择。
 
 \begin{quote}
-\textbf{注意：} 无向边应调用两次 \code{add(u,v,w)} 与 \code{add(v,u,w)} 拆成两条有向边；增广后若要输出每条边的实际流量，读入时记录边在边表中的下标，实际流量 $=$ 容量 $-$ 剩余容量。
+\textbf{注意：} 无向边应调用两次 \code{add\_edge(u,v,w)} 与 \code{add\_edge(v,u,w)} 拆成两条有向边；增广后若要输出每条边的实际流量，读入时记录边在边表中的下标，实际流量 $=$ 容量 $-$ 剩余容量。
 \end{quote}
 
 \lstinputlisting[language=C++]{codes/07-networkflow-01.cpp}
