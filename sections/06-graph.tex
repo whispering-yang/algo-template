@@ -183,6 +183,35 @@
 
 \lstinputlisting[language=C++]{codes/06-graph-10.cpp}
 
+\subsection{SPFA 算法（负权单源最短路）}
+
+\textbf{用途：} 求解\textbf{含负权边}图中的单源最短路，并可检测从源点可达的负环。SPFA (Shortest Path Faster Algorithm) 是 Bellman-Ford 的队列优化实现。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item Bellman-Ford 每轮盲目扫描全部 $m$ 条边；SPFA 仅当 $\operatorname{dist}[u]$ 被成功松弛后才将 $u$ 入队，用 $u$ 的出边继续松弛，避免无效扫描。
+  \item 一个点的距离被更新，意味着它的出边可能随之更新，故将其重新入队；队列为空时所有距离即为最短路。
+  \item 松弛时维护 $\operatorname{cnt}[v] \gets \operatorname{cnt}[u] + 1$，表示当前最短路经过的边数。最短路最多含 $n - 1$ 条边，若某次松弛后 $\operatorname{cnt}[v] \ge n$，说明从 $s$ 可达负环。
+\end{itemize}
+
+\textbf{算法流程：}
+
+\begin{enumerate}
+  \item 初始化 $\operatorname{dist}[s] = 0$，其余为 $+\infty$，将 $s$ 入队并标记在队。
+  \item 取出队首 $u$，清除在队标记；遍历出边 $(u, v, w)$，若 $\operatorname{dist}[v] > \operatorname{dist}[u] + w$ 则松弛并更新 $\operatorname{cnt}[v]$；若 $\operatorname{cnt}[v] \ge n$ 判定存在负环，直接返回。
+  \item 松弛成功且 $v$ 不在队中时，将 $v$ 入队并标记。
+  \item 重复步骤 2--3，直至队列为空。
+\end{enumerate}
+
+\textbf{时间复杂度：} 随机数据平均 $O(km)$（$k$ 为较小常数），最坏 $O(nm)$。
+
+\begin{quote}
+\textbf{注意：} SPFA 容易被构造数据卡到最坏复杂度，边权非负时应优先使用 Dijkstra。判负环时若需覆盖整张图（而非仅从 $s$ 可达的部分），可将所有点初始入队、距离初始化为 $0$。
+\end{quote}
+
+\lstinputlisting[language=C++]{codes/06-graph-18.cpp}
+
 \subsection{Floyd-Warshall 算法（全源最短路）}
 
 \textbf{用途：} 求解任意两点间的最短路（All-Pairs Shortest Path, APSP），支持负权边（不含负环）。
