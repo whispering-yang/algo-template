@@ -154,6 +154,38 @@
 
 \lstinputlisting[language=C++]{codes/06-graph-17.cpp}
 
+\subsection{最短路选型 (Shortest Path Selection)}
+
+\textbf{用途：} 根据边权、图结构和查询范围选择合适的最短路算法，避免在不满足条件的图上套用模板。
+
+\begin{itemize}
+  \item \textbf{松弛 (Relaxation)：} 对边 $(u,v,w)$，若 $d[v]>d[u]+w$，就更新 $d[v]$；只有 $u$ 可达时才能转移。
+  \item \textbf{负环 (Negative Cycle)：} 边权和为负的有向环；源点能到达负环且负环能到达目标时，该目标不存在有限最短距离。
+  \item 以下模板均采用 $1\sim n$ 编号和有向边；无向边需加入两个方向。不可达距离保留为 \code{INF}，不能直接参与加法。
+\end{itemize}
+
+\noindent\begin{tabularx}{\textwidth}{|l|X|l|}
+  \hline
+  \textbf{算法} & \textbf{适用条件} & \textbf{时间复杂度} \\
+  \hline
+  BFS & 所有边权均为 $1$，单源 & $O(n+m)$ \\
+  \hline
+  0-1 BFS & 所有边权均为 $0$ 或 $1$，单源 & $O(n+m)$ \\
+  \hline
+  Dijkstra & 所有边权非负，单源 & $O((n+m)\log n)$ \\
+  \hline
+  Bellman--Ford & 允许负权，单源；可检测可达负环 & $O(nm+n)$ \\
+  \hline
+  SPFA & 允许负权，单源；可检测可达负环 & 最坏 $O(nm+n)$ \\
+  \hline
+  Floyd--Warshall & 小规模全源，允许负权但不含负环 & $O(n^3)$ \\
+  \hline
+\end{tabularx}
+
+\begin{quote}
+\textbf{注意：} DAG 即使含负权，也可按拓扑序松弛，在 $O(n+m)$ 时间内求单源最短路。以下使用 \code{long long} 的模板要求所有中间距离、边权加法与取负操作不溢出；使用 \code{INF} 的模板还要求有限距离严格位于 $(-\code{INF},\code{INF})$ 内。
+\end{quote}
+
 \subsection{Dijkstra 算法（单源最短路）}
 
 \textbf{用途：} 求解\textbf{非负权图}中的单源最短路（Single-Source Shortest Path, SSSP），即从起点 $s$ 到其余所有点的最短距离。
@@ -183,7 +215,7 @@
 
 \lstinputlisting[language=C++]{codes/06-graph-10.cpp}
 
-\subsection{SPFA 算法（负权单源最短路）}
+\subsection{负权单源最短路 (SPFA)}
 
 \textbf{用途：} 求解\textbf{含负权边}图中的单源最短路，并可检测从源点可达的负环。SPFA (Shortest Path Faster Algorithm) 是 Bellman-Ford 的队列优化实现。
 
@@ -192,7 +224,7 @@
 \begin{itemize}
   \item Bellman-Ford 每轮盲目扫描全部 $m$ 条边；SPFA 仅当 $\operatorname{dist}[u]$ 被成功松弛后才将 $u$ 入队，用 $u$ 的出边继续松弛，避免无效扫描。
   \item 一个点的距离被更新，意味着它的出边可能随之更新，故将其重新入队；队列为空时所有距离即为最短路。
-  \item 松弛时维护 $\operatorname{cnt}[v] \gets \operatorname{cnt}[u] + 1$，表示当前最短路经过的边数。最短路最多含 $n - 1$ 条边，若某次松弛后 $\operatorname{cnt}[v] \ge n$，说明从 $s$ 可达负环。
+  \item 松弛时维护 $\operatorname{cnt}[v] \gets \operatorname{cnt}[u] + 1$，表示当前距离对应的松弛路径边数，\textbf{不是松弛次数或入队次数}。没有可达负环时可取至多 $n-1$ 条边的简单最短路；严格松弛中若 $\operatorname{cnt}[v]\ge n$，则存在从 $s$ 可达的负环。
 \end{itemize}
 
 \textbf{算法流程：}
@@ -204,13 +236,114 @@
   \item 重复步骤 2--3，直至队列为空。
 \end{enumerate}
 
-\textbf{时间复杂度：} 随机数据平均 $O(km)$（$k$ 为较小常数），最坏 $O(nm)$。
+\textbf{时间复杂度：} 最坏 $O(nm+n)$（通常简写为 $O(nm)$），空间 $O(n+m)$；不能保证线性时间。
 
 \begin{quote}
-\textbf{注意：} SPFA 容易被构造数据卡到最坏复杂度，边权非负时应优先使用 Dijkstra。判负环时若需覆盖整张图（而非仅从 $s$ 可达的部分），可将所有点初始入队、距离初始化为 $0$。
+\textbf{注意：} SPFA 容易被构造数据卡到最坏复杂度，边权非负时应优先使用 Dijkstra。返回 \code{false} 时距离数组不是有效的最短路答案；单源版本不会发现源点不可达的负环，覆盖全图请使用后面的独立模板。SLF 等入队顺序优化也不能改变最坏复杂度。
 \end{quote}
 
 \lstinputlisting[language=C++]{codes/06-graph-18.cpp}
+
+\subsection{逐轮松弛最短路 (Bellman--Ford)}
+
+\textbf{用途：} 求含负权边的单源最短路，并检测源点可达的负环；适合作为负权最短路的基础实现和对照算法。
+
+\textbf{核心原理：}
+\begin{itemize}
+  \item 使用边集逐轮扫描全部边。第 $k$ 轮结束后，所有至多经过 $k$ 条边的最短路径都已被考虑。
+  \item 无可达负环时，最短路可取简单路径，最多 $n-1$ 条边；第 $n$ 轮仍能严格松弛就说明存在可达负环。
+  \item 某一轮完全没有更新即可提前结束。必须跳过 \code{dist[u] == INF}，否则负权可能使不可达点产生伪距离。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item 将源点距离置 $0$，其余置 \code{INF}。
+  \item 至多执行 $n$ 轮，逐边尝试松弛，并记录本轮是否发生更新。
+  \item 无更新则返回成功；第 $n$ 轮有更新则报告可达负环。
+\end{enumerate}
+
+\textbf{时间复杂度：} $O(nm+n)$，空间 $O(n+m)$。
+
+\begin{quote}
+\textbf{注意：} 当前代码原地更新，一轮可能连续经过多条边。若题目限制\textbf{至多经过 $K$ 条边}，每轮必须先备份上一轮距离，只从备份转移，执行 $K$ 轮；此版本时间为 $O(K(n+m))$。即使存在负环，边数受限时答案仍可能有限，不能套用第 $n$ 轮判无解的逻辑。
+\end{quote}
+
+\lstinputlisting[language=C++]{codes/06-graph-19.cpp}
+
+\subsection{全图负环检测 (Negative Cycle Detection)}
+
+\textbf{用途：} 判断有向图任意连通部分是否存在负环，避免单源 SPFA 漏掉不可达区域。
+
+\textbf{核心原理：}
+\begin{itemize}
+  \item 引入超级源点 (Super Source)，向每个原顶点连权值为 $0$ 的边，使所有负环都可达。
+  \item 无需显式建超级源：直接令所有距离为 $0$，将所有点入队即可。
+  \item 路径边数从 $0$ 开始，只统计原图边，因此判定阈值仍为原图顶点数 $n$。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item 所有点初始化入队，距离与路径边数均置 $0$。
+  \item 严格松弛时更新路径边数；达到 $n$ 就返回存在负环。
+  \item 队列清空且未触发判定，则整图不存在负环。
+\end{enumerate}
+
+\textbf{时间复杂度：} 最坏 $O(nm+n)$，空间 $O(n+m)$。
+
+\begin{quote}
+\textbf{注意：} 此函数的 \code{true} 表示\textbf{存在负环}，与单源 SPFA 的成功返回值含义相反。负自环会被检测；无向负权边加入两个方向后即可往返形成负环，不能按普通有限最短路处理。
+\end{quote}
+
+\lstinputlisting[language=C++]{codes/06-graph-20.cpp}
+
+\subsection{差分约束 (Difference Constraints)}
+
+\textbf{用途：} 判断一组形如 $x_v-x_u\le w$ 的约束能否同时成立，并构造一组可行解，常用于相对大小、时间先后和间隔限制。
+
+\textbf{核心原理：}
+\begin{itemize}
+  \item $x_v-x_u\le w$ 等价于 $x_v\le x_u+w$，对应边 $u\to v$，边权为 $w$；最短路收敛后的距离满足全部不等式。
+  \item $x_v-x_u\ge w$ 改写为 $x_u-x_v\le -w$，连边 $v\to u$，边权 $-w$；等式拆成两条方向相反的不等式。
+  \item \textbf{仅限整数变量与整数界：} $x_v-x_u<w$ 等价于 $x_v-x_u\le w-1$；实数严格不等式不能这样转换。
+  \item 沿负环累加得到 $0\le\text{负数}$，因此存在负环就无解；反之，从超级源求出的最短距离是一组可行解。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item 将所有约束统一为 $x_v-x_u\le w$，调用 \code{add\_constraint(u,v,w)} 建图。
+  \item 所有变量初始为 $0$ 并入队，执行 SPFA，覆盖不连通的约束组。
+  \item 若路径边数达到 $n$，返回无解；否则队列清空后输出 $x[1\ldots n]$。
+\end{enumerate}
+
+\textbf{时间复杂度：} 最坏 $O(nm+n)$，其中 $m$ 为转换后的约束边数，空间 $O(n+m)$。
+
+\begin{quote}
+\textbf{注意：} 模板给出一组可行解。只有差值约束时，全部变量同时加上同一个常数仍然可行；需要令 $x_r=0$ 时，可统一减去 $x_r$。若有绝对上下界，应先引入基准变量并将其转为差值约束。重跑函数前重新建图，避免保留上一组约束。
+\end{quote}
+
+\lstinputlisting[language=C++]{codes/06-graph-21.cpp}
+
+\subsection{零一最短路 (0-1 BFS)}
+
+\textbf{用途：} 在线性时间内求所有边权均为 $0$ 或 $1$ 的单源最短路，如最少翻转、最少付费转移等问题。
+
+\textbf{核心原理：}
+\begin{itemize}
+  \item 使用双端队列 (Deque) 代替 Dijkstra 的小根堆。权为 $0$ 的更新状态放队首，权为 $1$ 的放队尾。
+  \item 队列中的候选距离保持非递减，每次处理最小距离；保存入队距离并跳过过期状态，每个点的出边只在距离确定时扫描。
+  \item 必须按距离是否变小进行松弛，不能像普通 BFS 一样在首次入队时就永久标记已访问。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item 源点距离置 $0$，其余置 \code{INF}，将源点加入队首。
+  \item 取队首状态，跳过过期距离，遍历出边并严格松弛。
+  \item 根据边权选择队首或队尾加入新状态，直至队列为空。
+\end{enumerate}
+
+\textbf{时间复杂度：} $O(n+m)$，空间 $O(n+m)$（包含可能的过期状态）。
+
+\lstinputlisting[language=C++]{codes/06-graph-22.cpp}
 
 \subsection{Floyd-Warshall 算法（全源最短路）}
 
@@ -222,6 +355,7 @@
   \item 动态规划思想：设 $d[i][j]$ 表示当前只允许经过编号前 $k$ 个节点作为中转点时，$i$ 到 $j$ 的最短距离。
   \item 转移方程：$d[i][j] = \min(d[i][j],\ d[i][k] + d[k][j])$，即「经过 $k$ 中转」与「不经过 $k$ 中转」取较小者。
   \item 外层循环枚举中转点 $k$，内层两重循环枚举 $i, j$，共 $O(n^3)$ 次转移。
+  \item 只有 $d[i][k]$ 与 $d[k][j]$ 均非 \code{INF} 时才转移，避免无穷大与负权相加产生伪路径；重边取最小边权。
 \end{itemize}
 
 \textbf{时间复杂度：} $O(n^3)$，空间复杂度 $O(n^2)$，适合 $n \le 500$ 左右的稠密图。

@@ -11,7 +11,7 @@ bool spfa(int s) {
     int n = (int)dist.size() - 1;
     fill(dist.begin(), dist.end(), INF);
     dist[s] = 0;
-    vector<int> cnt(n + 1);  // cnt[v]：当前最短路经过的边数
+    vector<int> cnt(n + 1);  // 当前距离对应的松弛路径边数，不是入队次数
     vector<bool> inq(n + 1);
     queue<int> q;
     q.push(s);
@@ -24,7 +24,7 @@ bool spfa(int s) {
             if (dist[v] > dist[u] + w) {
                 dist[v] = dist[u] + w;
                 cnt[v] = cnt[u] + 1;
-                if (cnt[v] >= n) return false;  // 最短路至多 n-1 条边，说明存在负环
+                if (cnt[v] >= n) return false;  // 松弛路径含 n 条边，存在可达负环
                 if (!inq[v]) {
                     q.push(v);
                     inq[v] = true;
@@ -37,3 +37,5 @@ bool spfa(int s) {
 
 // 使用前：读入 n, m, s，将 dist、adj resize 到 n + 1，向 adj 中加入有向边 (u, v, w)；调用 spfa(s)
 // 支持负权边；返回 true 时 dist[i] 即 s 到 i 的最短路，不可达为 INF
+// 只检测 s 可达的负环；最坏 O(nm)，非负权图优先使用 Dijkstra
+// 约定所有中间距离及 dist[u] + w 均在 (-INF, INF) 内
