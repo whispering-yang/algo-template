@@ -306,6 +306,45 @@
   \item 若只在\textbf{最新版本}上操作且无需回退，普通并查集（路径压缩 + 按秩合并）更简单高效；可持久化仅在需要访问历史版本时使用。
 \end{itemize}
 
+\subsection{笛卡尔树 (Cartesian Tree)}
+
+\textbf{用途：}
+把静态序列转成一棵同时满足\textbf{下标的二叉搜索树性质}和\textbf{数值的堆性质}的二叉树，用于区间最值查询（RMQ）与最近公共祖先（LCA）的转化、以区间最值为分界的分治或树形 DP，以及直方图最大矩形等问题。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{中序遍历：} 每个数组下标恰对应一个节点，中序遍历得到 $1,2,\ldots,n$。因此每棵子树都对应原数组中的连续区间 $[L_u,R_u]$。
+  \item \textbf{堆性质：} 小根笛卡尔树中父节点的值不大于儿子，整棵树的根是全局最小值的位置；大根版本反之。子树根也是其对应区间的最值位置。
+  \item \textbf{重复值约定：} 模板仅在新值\textbf{严格更优}时弹栈，相等时保留较早下标在上方。小根版本等价于按 $(a_i,i)$ 的字典序建堆，固定约定后树形唯一，区间查询返回\textbf{最靠左的最值位置}。
+  \item \textbf{右链与单调栈：} 从左向右插入下标，栈中维护已建树的最右链。小根版本中栈内数值从栈底到栈顶单调不降；每个节点最多入栈、出栈各一次。
+\end{itemize}
+
+\textbf{算法流程（以小根版本为例）：}
+\begin{enumerate}
+  \item 按 $i=1,2,\ldots,n$ 依次插入，令 $k=\code{top}$。当 $k>0$ 且 $\code{w[stk[k]]}>\code{w[i]}$ 时递减 $k$；\code{top} 暂时不变，保留操作前的栈顶位置。
+  \item 若 $k>0$，把 $i$ 接为 \code{stk[k]} 的右儿子；若 $k<\code{top}$，把\textbf{最后弹出的节点} \code{stk[k+1]} 接为 $i$ 的左儿子。旧栈内容尚未覆盖，因而无需额外记录弹出节点。
+  \item 写入 \code{stk[++k] = i}，再令 \code{top = k}。全部插入后，非空树的根为 \code{stk[1]}。
+\end{enumerate}
+
+\textbf{时间复杂度：} 建树与统计均为 $O(n)$，空间 $O(n)$。\textbf{树高最坏为 $O(n)$}，后续遍历也应避免直接递归；它不具备 Treap 随机优先级带来的期望平衡保证。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-16.cpp}
+
+\textbf{可选统计：}
+若需父指针、子树大小和区间端点，在上述模板后添加以下代码，建树后调用 \code{calc\_subtrees()}。先记录父节点在前的遍历顺序，再逆序统计，额外时间与空间均为 $O(n)$。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-17.cpp}
+
+\textbf{使用与应用：}
+\begin{itemize}
+  \item 输入采用 $1$ 下标，代码中的 \code{w[i]} 即正文的 $a_i$。读入 $n$ 后令 \code{w.resize(n+1)} 并填入 \code{w[1..n]}，再调用 \code{build()}；\code{w[0]} 不参与比较。\code{ls/rs} 为左右儿子，节点 $0$ 表示空节点，空树的根为 $0$。
+  \item 默认建小根树，将循环中的 \code{>} 改成 \code{<} 即为大根树；相等时不弹栈。若需最靠右的最值位置，小根树改为 \code{>=}，大根树改为 \code{<=}。
+  \item 可选统计中的 \code{fa[u]} 为父亲，根的父亲为 $0$；\code{siz[u]} 为子树大小，子树区间为 $[\code{L[u]},\code{R[u]}]$。以下两个子树统计应用需先调用 \code{calc\_subtrees()}。
+  \item \textbf{RMQ 转 LCA：} 在小根树上，$\operatorname{LCA}(l,r)$ 正是 $[l,r]$ 中最靠左的最小值下标；大根树对应最大值。\textbf{本模板只建树与统计子树信息}，区间查询还需接图论章节的 LCA 模板，复杂度取决于所选 LCA 方法，不能把建树 $O(n)$ 当作单次查询复杂度。
+  \item \textbf{直方图最大矩形：} 当 $a_i\ge 0$ 表示宽度均为 $1$ 的柱高时，在小根树上取 $\max_u a_u\cdot\code{siz[u]}$。每个子树区间内的高度均不小于根高；若向外扩展只遇到等高祖先，更大的候选区间会由祖先覆盖。
+  \item \textbf{所有子数组的最小值之和：} 按区间两端的 LCA 分类，节点 $u$ 的贡献为 $a_u\,(u-L_u+1)(R_u-u+1)$。左右端点分别选在 $[L_u,u]$ 和 $[u,R_u]$，重复值按上述约定各计一次；乘法与累加应按题目范围使用 \code{long long}、更宽整数或取模。
+\end{itemize}
+
 \subsection{FHQ Treap (无旋 Treap)}
 
 \textbf{用途：}
