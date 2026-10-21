@@ -43,3 +43,7 @@ xelatex -interaction=nonstopmode main.tex
 - **代码模板**：在 `codes/` 目录下创建 `.cpp` 文件（C++17 风格），用 `\lstinputlisting[language=C++]{codes/xx-name.cpp}` 引入。
 - **新增章节**：在 `sections/` 下创建 `NN-topic.tex`，并在 `main.tex` 中添加 `\include{sections/NN-topic}`。
 - **样式调整**：修改 `styles/mystyle.sty`，不要改动 `main.tex` 的全局设置。
+
+## 许可证
+
+本项目采用 [MIT License](LICENSE) 开源。
