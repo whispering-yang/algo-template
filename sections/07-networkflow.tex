@@ -62,8 +62,10 @@
 \begin{itemize}
   \item \textbf{反向边费用为负：} 正边费用 $w$ 对应的反向边费用为 $-w$，沿反向边增广即退回流量并退还费用，与最大流的退流机制一致。
   \item \textbf{连续最短增广路 (Successive Shortest Path, SSP)：} 每轮在残量网络中找一条 $s \to t$ 费用最小的增广路并推满。只要每轮都沿最短路增广，流量达到每个值时的费用都是最小的。
-  \item \textbf{SPFA 找最短路：} 反向边的负费用使残量网络含负权边，须用 SPFA（队列优化的 Bellman-Ford）而非 Dijkstra。约定初始网络不含负环，否则算法无法终止。
+  \item \textbf{最短路的选择：} 反向边的负费用使残量网络含负权边，不能直接运行普通 Dijkstra；可用 SPFA（队列优化的 Bellman-Ford），也可维护势能使重标权非负后运行 Dijkstra。两种模板均约定初始正容量网络不含负环。
 \end{itemize}
+
+\subsubsection{SPFA 版 (SPFA-based SSP)}
 
 \textbf{算法流程：}
 \begin{enumerate}
@@ -75,10 +77,43 @@
 \textbf{时间复杂度：} $O(f \cdot n \cdot m)$，$f$ 为最大流量（伪多项式）。
 
 \begin{quote}
-\textbf{注意：} 若需要的是流量恰好为 $f_0$ 的最小费用（而非最大流），累计流量达到 $f_0$ 时提前停止即可；输出每条边的流量同样用「容量 $-$ 剩余容量」。
+\textbf{注意：} 若需要流量恰好为 $f_0$ 的最小费用，每轮增广量还须限制为 $f_0-\text{当前流量}$，且最终检查是否达到 $f_0$；下方 Dijkstra 版已提供流量上限参数。输出每条边的流量同样用「容量 $-$ 剩余容量」。
 \end{quote}
 
 \lstinputlisting[language=C++]{codes/07-networkflow-03.cpp}
+
+\subsubsection{势能与 Dijkstra (Potentials and Dijkstra)}
+
+\textbf{用途：} 用一次势能初始化和多轮堆优化 Dijkstra 加速 SSP，适合增广次数较多的费用流；支持负费用边及指定流量上限。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{势能与重标权：} 为点维护势能 $h[v]$，将边费用改写为
+  \[
+    w_h(u,v)=w(u,v)+h[u]-h[v].
+  \]
+  任意 $s\to t$ 路径的新费用等于原费用加 $h[s]-h[t]$，因此最短路的选择不变。只要从 $s$ 可达部分的正容量残量边满足 $w_h(u,v)\ge 0$，就能运行 Dijkstra。
+  \item \textbf{初始势能：} 若所有正容量边费用非负，取 $h[v]=0$；否则先从 $s$ 跑一次 Bellman-Ford，令可达点的 $h[v]$ 等于原费用最短路距离。由 $h[v]\le h[u]+w(u,v)$ 可知重标权非负。不可达点的势能设为 $0$。
+  \item \textbf{势能更新：} Dijkstra 得到重标权距离 $d[v]$ 后，仅对本轮可达点更新 $h[v]\gets h[v]+d[v]$。由最短路不等式，新重标权仍非负；最短增广路上的边新重标权为 $0$，新增的反向残量边也为 $0$。
+  \item \textbf{不可达点：} 增广只会在原本可达的路径点之间增加反向边，不会让原本不可达的点变得可达，所以只需维持源点可达部分的势能可行性。不可将 $\mathrm{INF}$ 加入势能，也不能在弹出 $t$ 时提前退出后直接用所有暂定距离更新势能。
+  \item \textbf{费用还原：} 使用更新前的势能时，原路径费用为 $d[t]-h[s]+h[t]$；更新后则为 $h[t]-h[s]$。模板沿前驱边直接累加原费用，避免把重标权距离误当成实际费用。\code{pre[v]} 保存边下标，以正确处理重边与退流。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item 成对加入正反边，反向边初始容量为 $0$、费用取负；按是否有正容量负费用边初始化势能。
+  \item 只经过正容量残量边，以 $w_h$ 为权运行 Dijkstra；若 $t$ 不可达则结束。
+  \item 对可达点更新势能，沿前驱边回溯，取路径瓶颈与剩余流量上限的较小者作为增广量。
+  \item 更新正反边容量，累计流量和原费用，重复直到达到上限或不存在增广路。
+\end{enumerate}
+
+\textbf{时间复杂度：} 设增广次数为 $k$，初始化最坏 $O(nm)$，每轮懒删除堆 Dijkstra 为 $O((n+m)\log(n+m))$，合计 $O(nm+k(n+m)\log(n+m))$；初始费用非负时省去 $O(nm)$ 项。整数容量下 $k\le f$，仍为伪多项式算法。空间复杂度 $O(n+m)$。
+
+\begin{quote}
+\textbf{注意：} 调用 \code{mcmf(s,t,limit)} 返回本次新增的流量与费用；省略 \code{limit} 则求最大流。恰好流量为 $f_0$ 时传入 $f_0$ 并检查返回流量。要求 $s\ne t$、容量为非负整数、初始正容量网络无负环；距离、势能和重标权的绝对值须小于模板中的 \code{INF}，总流量小于 \code{INF}，费用及中间运算须在 64 位有符号整数范围内。
+\end{quote}
+
+\lstinputlisting[language=C++]{codes/07-networkflow-07.cpp}
 
 \subsection{二分图匹配 (Bipartite Matching)}
 
