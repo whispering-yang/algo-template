@@ -215,6 +215,40 @@
 
 \lstinputlisting[language=C++]{codes/02-datastructures-06.cpp}
 
+\subsection{长链剖分 (Long-Chain Decomposition)}
+
+\textbf{用途：}
+按子树高度而不是子树大小选择长儿子，复用沿长链的树形 DP 状态。它特别适合维护「子树内距当前节点为 $d$ 的节点」这类按深度排列的数组，常见于深度频次统计、树上字符串/多项式的按层合并等问题。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{高度：} $h(u)=1+\max h(v)$，叶子的高度为 $1$。高度最大的儿子称为长儿子，其余儿子称为短儿子。
+  \item \textbf{长链：} 沿长儿子边连接得到的链。每个节点恰属于一条长链；长链长度等于链头子树的高度。
+  \item \textbf{状态继承：} 若 $f_u[d]$ 表示 $u$ 子树中距离 $u$ 为 $d$ 的统计量，则长儿子的状态平移一位后就是 $u$ 的主体状态。用指针偏移让 $f_u[1\ldots]$ 与 $f_{\mathrm{long son}}[0\ldots]$ 共享存储，只遍历短儿子进行合并。
+  \item \textbf{与重链剖分的区别：} 重链剖分按子树大小选重儿子，目标是路径拆分；长链剖分按高度选长儿子，目标是复用按深度组织的树形 DP，不能混用两者的复杂度证明。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item 后序 DFS 求出每个节点的高度和长儿子。
+  \item 为每条长链一次性分配一段连续内存，沿长儿子方向设置状态指针；同一条链上的相邻节点指针相差 $1$。
+  \item 后序合并：令 $f_u[0]=1$，长儿子状态已经通过指针偏移就位；对每个短儿子 $v$，把 $f_v[d-1]$ 加到 $f_u[d]$。
+\end{enumerate}
+
+\textbf{时间复杂度：}
+若合并短儿子时只扫描其高度范围，所有短链长度之和不超过 $n$，因此总时间复杂度为 $O(n)$，空间复杂度为 $O(n)$。这个结论只适用于每个状态能在 $O(1)$ 时间合并的按深度 DP；两两卷积等更复杂状态不能直接套用。
+
+\lstinputlisting[language=C++]{codes/02-datastructures-18.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+  \item 模板统计每个节点子树中各深度的节点数，\code{best[u]} 可替换为题目需要的逐深度答案维护。
+  \item 内存池按长链分块；同一长链上的指针共享一段空间，不能在合并后继续假设子节点状态保持独立副本。
+        若节点答案依赖完整状态，应在该节点合并完成时立即记录（模板中的 \code{best[u]} / \code{best\_depth[u]} 即为此例）。
+  \item 长链剖分按\textbf{高度}选儿子；若改按子树大小选择，就是重链剖分。
+  \item 递归 DFS 在链形树上深度为 $O(n)$；题目栈空间较小时应改为显式栈或调整运行环境。
+\end{itemize}
+
 \subsection{可持久化线段树 (Persistent Segment Tree / 主席树)}
 
 \textbf{用途：}
