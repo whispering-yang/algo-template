@@ -24,6 +24,42 @@
 
 \lstinputlisting[language=C++]{codes/04-strings-01.cpp}
 
+\subsection{马拉车算法 (Manacher)}
+
+\textbf{用途：} 在线性时间内求出字符串所有中心的最大回文半径，可用于求最长回文子串、统计回文子串个数，以及预处理后常数时间判断某个子串是否为回文。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{下标约定：} 原串 $s$ 长度为 $n$，下标从 $0$ 开始。直接分别处理奇数与偶数长度回文，无需插入分隔符或哨兵字符。
+  \item \textbf{奇回文半径：} $odd[i]$ 包含中心字符，最大回文区间为 $[i-odd[i]+1,\,i+odd[i]-1]$，长度为 $2odd[i]-1$。
+  \item \textbf{偶回文半径：} $even[i]$ 的中心位于 $i-1$ 与 $i$ 之间，最大回文区间为 $[i-even[i],\,i+even[i]-1]$，长度为 $2even[i]$；半径为 $0$ 时表示该中心没有非空偶回文。
+  \item \textbf{镜像复用：} 维护已处理中心中右端点最远的回文区间 $[L,R]$。若 $i\le R$，奇回文的镜像中心为 $j=L+(R-i)$，偶回文为 $j=L+(R-i)+1$，先取 $\min(d[j],R-i+1)$ 作为半径下界，再向两边扩展。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+  \item 奇、偶回文各扫描一次，每次从空区间 $[L,R]=[0,-1]$ 开始。
+  \item 若当前中心位于 $R$ 之外，奇回文初始半径为 $1$，偶回文为 $0$；否则利用镜像半径与右边界初始化。
+  \item 在不越界且左右字符相等时继续扩展，记录最终半径；若新回文的右端点更远，则更新 $L,R$。
+\end{enumerate}
+
+\textbf{常见应用：}
+\begin{itemize}
+  \item \textbf{最长回文子串：} 取所有 $2odd[i]-1$ 与 $2even[i]$ 的最大值。\code{longest()} 返回起点和长度，并列取最左；空串返回 $\{0,0\}$。
+  \item \textbf{回文子串计数：} 每个中心可贡献从最小半径到最大半径的全部回文，因此答案为 $\sum_i (odd[i]+even[i])$。按出现位置计数，\textbf{不是本质不同回文串数}；答案最大为 $n(n+1)/2$，使用 \code{long long}。
+  \item \textbf{区间回文判断：} 对非空闭区间 $[l,r]$，令 $len=r-l+1$、$mid=l+\lfloor len/2\rfloor$。奇数长度检查 $odd[mid]\ge\lfloor len/2\rfloor+1$，偶数长度检查 $even[mid]\ge len/2$。\code{is\_palindrome(l,r)} 对非法下标返回 \code{false}。
+\end{itemize}
+
+\textbf{时间复杂度：} 半径已被镜像覆盖的部分无需重复比较，成功扩展使最右边界前进，每个中心至多额外产生一次失败比较，因此预处理时间为 $O(n)$，空间为 $O(n)$。\code{longest()} 与 \code{count()} 各为 $O(n)$，单次区间判断为 $O(1)$。
+
+\begin{quote}
+\textbf{注意：} 模板按 \code{string} 的字节比较字符，适用于竞赛常见的单字节字符集；UTF-8 中文需先解码。半径数组对应构造时的原串，修改原串后需重新构造。
+\end{quote}
+
+\textbf{代码模板：} 主程序读入一个不含空白的字符串，输出最长回文子串长度；结构体本身也支持空串。
+
+\lstinputlisting[language=C++]{codes/04-strings-08.cpp}
+
 \subsection{AC自动机 (Aho-Corasick Automaton)}
 
 \textbf{用途：} 在线性时间内解决多模式串匹配问题——给定文本串 $T$ 和模式串集合 $\{P_1,\dots,P_k\}$，统计每个模式串的出现次数或位置。
