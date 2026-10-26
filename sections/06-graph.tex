@@ -447,12 +447,30 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 
 \lstinputlisting[language=C++]{codes/06-graph-09.cpp}
 
-\subsection{割点与桥}
+\subsection{割点与桥 (Articulation Points and Bridges)}
+
+\textbf{用途：} 在线性时间内找出无向图中删除后会使连通分量数增加的顶点和边，用于分析单点或单边失效对连通性的影响。模板支持非连通图、重边和自环，顶点编号为 $1 \sim n$。
+
+\subsubsection{核心概念与算法流程}
+
+\begin{itemize}
+  \item $\operatorname{dfn}[u]$：顶点 $u$ 在 DFS 中首次被访问的时间。
+  \item $\operatorname{low}[u]$：从 $u$ 出发，沿 DFS 树边向下走若干步，再至多经过一条非树边，能到达的最小发现时间；不允许使用进入当前节点的父树边反向返回。
+  \item \textbf{DFS 树孩子}：只有访问尚未发现的顶点并递归时，才产生一个孩子；孩子数不是原图中的度数。
+\end{itemize}
+
+\begin{enumerate}
+  \item 进入 $u$ 时，初始化 $\operatorname{dfn}[u] = \operatorname{low}[u] = ++\mathit{timer}$。
+  \item 遍历邻接表时，只跳过一次父节点方向的边。其余到父节点的平行边仍参与更新，避免把重边误判为桥。
+  \item 若 $v$ 未被访问，递归后令 $\operatorname{low}[u] = \min(\operatorname{low}[u], \operatorname{low}[v])$，再判定割点与桥。
+  \item 若 $v$ 已被访问且当前边未被跳过，令 $\operatorname{low}[u] = \min(\operatorname{low}[u], \operatorname{dfn}[v])$。
+  \item 遍历所有顶点，从每个尚未访问的顶点启动 DFS。非连通图中的每棵 DFS 树都要独立处理根节点。
+\end{enumerate}
 
 \subsubsection{割点（Articulation Point / Cut Vertex）}
 
 \begin{itemize}
-  \item \textbf{定义}：在无向连通图中，删除某个顶点及其关联的边后，图的连通分量数增加，则该顶点称为割点。
+  \item \textbf{定义}：在无向图中，删除某个顶点及其关联的边后，整个图的连通分量数增加，则该顶点称为割点。
   \item \textbf{Tarjan 判定条件}（基于 DFS 树）：
     \begin{enumerate}
       \item \textbf{根节点}：若根节点在 DFS 树中有至少 $2$ 个子树，则根为割点。
@@ -461,13 +479,13 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
           \item 含义：$v$ 及其子树无法通过非树边（回边）到达 $u$ 的祖先，因此删除 $u$ 会将 $v$ 的子树与上层断开。
         \end{itemize}
     \end{enumerate}
-  \item \textbf{注意}：$\operatorname{low}[v] \ge \operatorname{dfn}[u]$ 意味着即使经过回边，$v$ 能到达的最早祖先不早于 $u$，所以 $u$ 是必经之路。
+  \item \textbf{注意}：上述 $\operatorname{low}$ 判据只直接用于非根节点。根节点必须按 DFS 树孩子数判定；孤立点和只有一个孩子的根都不是割点。使用布尔标记去重，避免一个割点因多个子树满足条件而被重复计数。
 \end{itemize}
 
 \subsubsection{桥（Bridge / Cut Edge）}
 
 \begin{itemize}
-  \item \textbf{定义}：在无向连通图中，删除某条边后，图的连通分量数增加，则该边称为桥。
+  \item \textbf{定义}：在无向图中，删除某条边后，整个图的连通分量数增加，则该边称为桥。
   \item \textbf{Tarjan 判定条件}：
     \begin{itemize}
       \item 对于树边 $(u, v)$ 且 $\operatorname{parent}[v] = u$，若 $\operatorname{low}[v] > \operatorname{dfn}[u]$，则边 $(u, v)$ 是桥。
@@ -476,25 +494,39 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
   \item \textbf{注意}：条件是 \textbf{严格大于}（$\operatorname{low}[v] > \operatorname{dfn}[u]$），而割点是 $\operatorname{low}[v] \ge \operatorname{dfn}[u]$。
 \end{itemize}
 
+\subsubsection{为什么割点取大于等于，桥取严格大于}
+
+对树边 $(u,v)$，以下割点结论均假设 $u$ 不是 DFS 树根：
+\begin{itemize}
+  \item $\operatorname{low}[v] < \operatorname{dfn}[u]$：$v$ 子树能绕到 $u$ 的祖先，该子树不构成 $u$ 是割点的证据。
+  \item $\operatorname{low}[v] = \operatorname{dfn}[u]$：$v$ 子树能绕回 $u$，所以 $(u,v)$ 不是桥；但无法绕过 $u$ 到达其祖先，因此 $u$ 是割点。
+  \item $\operatorname{low}[v] > \operatorname{dfn}[u]$：$v$ 子树无法绕回 $u$ 及其祖先，因此 $(u,v)$ 是桥，且 $u$ 是割点。
+\end{itemize}
+
+例如边集为 $\{(1,2),(2,3),(3,4),(4,2)\}$，按 $1,2,3,4$ 的顺序 DFS 时，$\operatorname{low}[3] = \operatorname{dfn}[2]$。删去顶点 $2$ 会使顶点 $1$ 与 $\{3,4\}$ 分离，但删去边 $(2,3)$ 后仍可通过 $2 \to 4 \to 3$ 连通。
+
 \subsubsection{与强连通分量 Tarjan 的区别}
 
 \noindent\begin{tabularx}{\textwidth}{|c|X|X|}
   \hline
   & \textbf{强连通分量 (有向图)} & \textbf{割点与桥 (无向图)} \\
   \hline
-  \textbf{更新 low} &
+  \textbf{已访问邻点} &
   $\operatorname{low}[u] = \min(\operatorname{low}[u], \operatorname{dfn}[v])$ 当 $v$ 已访问且在栈中 &
-  $\operatorname{low}[u] = \min(\operatorname{low}[u], \operatorname{dfn}[v])$ 只要 $v$ 不是父节点 \\
+  $\operatorname{low}[u] = \min(\operatorname{low}[u], \operatorname{dfn}[v])$，跳过一次父节点方向的边，其余平行边保留 \\
   \hline
   \textbf{判定条件} &
   $\operatorname{low}[u] = \operatorname{dfn}[u]$ 时弹栈 &
   根据子节点 $\operatorname{low}$ 与 $\operatorname{dfn}[u]$ 比较 \\
   \hline
-  \textbf{处理回边} &
-  仅考虑栈内节点 &
-  所有访问过的非父节点（无向边） \\
+  \textbf{辅助状态} &
+  需要分量栈和栈内标记 &
+  无需分量栈或栈内标记 \\
   \hline
 \end{tabularx}
+
+\par\medskip
+两种算法对未访问邻点都先递归，再用 $\operatorname{low}[v]$ 更新 $\operatorname{low}[u]$。割点与桥模板不需要分量栈。
 
 \subsubsection{复杂度}
 
@@ -503,7 +535,17 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
   \item \textbf{空间复杂度}：$O(n + m)$。
 \end{itemize}
 
+\begin{quote}
+\textbf{注意：} 递归深度最坏为 $O(n)$，长链大数据下可能超过运行环境的栈空间限制；此时需改用显式栈模拟 DFS。
+\end{quote}
+
 \subsubsection{代码模板}
+
+调用 \code{find\_cuts\_and\_bridges()} 可重置搜索状态并完成搜索。
+\begin{itemize}
+  \item \code{is\_cut[u]} 标记顶点 $u$ 是否为割点；\code{bridges} 保存各条桥的端点。
+  \item 输出依次为割点数、割点列表（无割点时为空行）、桥数及每条桥的端点。桥按 DFS 发现结果的顺序输出，不保证端点或边列表有序。
+\end{itemize}
 
 \lstinputlisting[language=C++]{codes/06-graph-03.cpp}
 
@@ -534,7 +576,7 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 \subsubsection{基本概念}
 
 \begin{itemize}
-  \item \textbf{定义}：在无向图中，若删除任意一条边后图仍然连通，则该边属于同一个边双连通分量；边双连通分量也称为 2-edge-connected component。
+  \item \textbf{定义}：删除无向图中的所有桥后，剩余图的每个连通分量称为边双连通分量。孤立点也构成一个分量。
   \item \textbf{应用}：求桥、桥树、无向图中不受单条边影响的连通结构。
   \item \textbf{特征}：边双连通分量内部不存在桥，且任意两个点之间至少有两条边不重的路径。
 \end{itemize}
@@ -543,11 +585,13 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 
 \begin{itemize}
   \item \textbf{桥判定}：对于树边 $(u, v)$，若 $\operatorname{low}[v] > \operatorname{dfn}[u]$，则 $(u, v)$ 是桥。
-  \item \textbf{边双分量构造}：当 DFS 回到 $u$ 时，若某个子树无法回到 $u$ 的祖先，则把该子树对应的栈中节点弹出，形成一个边双连通分量。
-  \item \textbf{重边特判}：在无向图中，若出现重边，需特别注意父边的重复处理，否则会误判成桥或错误地拆分分量。常见做法是对每个点记录一条父边的访问状态，避免把同一条边重复计算两次。
+  \item \textbf{边双分量构造}：进入顶点时将其压栈。遍历完 $u$ 的邻接表后，若 $\operatorname{low}[u] = \operatorname{dfn}[u]$，则从栈顶弹出直到 $u$，这些顶点构成一个边双连通分量。
+  \item \textbf{重边特判}：每次 DFS 调用使用局部布尔变量，只跳过一次父节点方向的边，其余平行边作为回边更新 $\operatorname{low}$。该方法与前面的割点与桥模板一致。
 \end{itemize}
 
 \subsubsection{代码模板}
+
+\textbf{时间复杂度：} $O(n+m)$；\textbf{空间复杂度：} $O(n+m)$。\code{components[id]} 保存第 $id$ 个分量的顶点，\code{component\_id[u]} 保存顶点 $u$ 所属的分量编号（从 $0$ 开始）。\code{find\_edge\_bcc()} 支持重复调用并重置搜索状态；递归深度限制同前。
 
 \lstinputlisting[language=C++]{codes/06-graph-05.cpp}
 

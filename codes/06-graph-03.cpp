@@ -1,32 +1,69 @@
-int n, m;
-vector<vector<int>> adj;
+#include <bits/stdc++.h>
+using namespace std;
 
-int dfn_cnt;
-array<int, MAXN> dfn, low, parent;
-// parent[i] 父节点编号，根节点 parent 设为 -1
+// 顶点编号 1~n；支持非连通图、重边和自环。
+int n, m, dfn_cnt = 0;
+vector<vector<int>> adj;
+vector<int> dfn, low;
+vector<bool> is_cut;
+vector<pair<int, int>> bridges;
 
 void tarjan(int u, int p) {
-    parent[u] = p;
     dfn[u] = low[u] = ++dfn_cnt;
+    int child_count = 0;
+    bool parent_skipped = false;
     for (int v : adj[u]) {
-        if (v == p) continue;
+        // 只跳过一条到父节点的边，其余平行边参与 low 更新。
+        if (v == p && !parent_skipped) {
+            parent_skipped = true;
+            continue;
+        }
         if (dfn[v] == 0) {
+            ++child_count;
             tarjan(v, u);
             low[u] = min(low[u], low[v]);
+            if (p != 0 && low[v] >= dfn[u]) is_cut[u] = true;
+            if (low[v] > dfn[u]) bridges.emplace_back(u, v);
         } else {
             low[u] = min(low[u], dfn[v]);
         }
     }
+    if (p == 0) is_cut[u] = (child_count >= 2);
 }
 
-// 在 DFS 之后，利用以下 if 语句判定割点和桥：
+void find_cuts_and_bridges() {
+    dfn_cnt = 0;
+    dfn.assign(n + 1, 0);
+    low.assign(n + 1, 0);
+    is_cut.assign(n + 1, false);
+    bridges.clear();
+    for (int u = 1; u <= n; ++u) {
+        if (dfn[u] == 0) tarjan(u, 0);
+    }
+}
 
-// 1. 割点（非根节点）：存在子节点 v 满足 low[v] >= dfn[u]
-//    if (low[v] >= dfn[u]) 则 u 是割点
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
 
-// 2. 割点（根节点）：根节点在 DFS 树中有 >= 2 个子树
-//    if (child_cnt[root] >= 2) 则 root 是割点
-//    其中 child_cnt 可以在 tarjan 中统计：if (dfn[v] == 0) child_cnt[u]++;
+    cin >> n >> m;
+    adj.resize(n + 1);
+    for (int i = 0; i < m; ++i) {
+        int u, v;
+        cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    find_cuts_and_bridges();
 
-// 3. 桥：树边 (u, v) 且 parent[v] == u，满足 low[v] > dfn[u]
-//    if (low[v] > dfn[u]) 则边 (u, v) 是桥
+    vector<int> cut_vertices;
+    for (int u = 1; u <= n; ++u) {
+        if (is_cut[u]) cut_vertices.push_back(u);
+    }
+    // 割点数、割点列表（无割点时输出空行）、桥数、每条桥的端点。
+    cout << cut_vertices.size() << '\n';
+    for (int u : cut_vertices) cout << u << ' ';
+    cout << '\n' << bridges.size() << '\n';
+    for (auto [u, v] : bridges) cout << u << ' ' << v << '\n';
+    return 0;
+}

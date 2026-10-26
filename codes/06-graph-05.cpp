@@ -1,40 +1,51 @@
-#include <array>
-#include <iostream>
-#include <stack>
-#include <vector>
+#include <bits/stdc++.h>
 using namespace std;
 
-constexpr int MAXN = 5e5 + 15;
-array<vector<int>, MAXN> adj, bcc_arr;
-array<int, MAXN> dfn, low, bcc;
-array<bool, MAXN> in_stk;
-int n, m, dfn_cnt = 0, bcc_cnt = 0;
+// 顶点编号 1~n；分量编号 0~components.size()-1。
+int n, m, dfn_cnt = 0;
+vector<vector<int>> adj, components;
+vector<int> dfn, low, component_id;
 stack<int> stk;
 
 void tarjan(int u, int p) {
     low[u] = dfn[u] = ++dfn_cnt;
-    in_stk[u] = true;
     stk.push(u);
-    bool flag = false;
-    for (auto v : adj[u]) {
+    bool parent_skipped = false;
+    for (int v : adj[u]) {
+        // 只跳过一次父节点方向的边，保留重边作为回边。
+        if (v == p && !parent_skipped) {
+            parent_skipped = true;
+            continue;
+        }
         if (dfn[v] == 0) {
             tarjan(v, u);
             low[u] = min(low[u], low[v]);
         } else {
-            if (v != p || flag) {
-                low[u] = min(low[u], dfn[v]);
-            } else {
-                flag = true;
-            }
+            low[u] = min(low[u], dfn[v]);
         }
     }
     if (dfn[u] == low[u]) {
-        while (stk.top() != u) {
-            bcc_arr[bcc_cnt].push_back(stk.top());
+        int id = (int)components.size();
+        components.emplace_back();
+        while (true) {
+            int v = stk.top();
             stk.pop();
+            components.back().push_back(v);
+            component_id[v] = id;
+            if (v == u) break;
         }
-        bcc_arr[bcc_cnt++].push_back(stk.top());
-        stk.pop();
+    }
+}
+
+void find_edge_bcc() {
+    dfn_cnt = 0;
+    dfn.assign(n + 1, 0);
+    low.assign(n + 1, 0);
+    component_id.assign(n + 1, -1);
+    components.clear();
+    stk = {};
+    for (int u = 1; u <= n; ++u) {
+        if (dfn[u] == 0) tarjan(u, 0);
     }
 }
 
@@ -43,6 +54,7 @@ int main() {
     ios::sync_with_stdio(false);
 
     cin >> n >> m;
+    adj.resize(n + 1);
     for (int i = 0; i < m; i++) {
         int u, v;
         cin >> u >> v;
@@ -50,19 +62,13 @@ int main() {
         adj[v].push_back(u);
     }
 
-    for (int i = 1; i <= n; i++) {
-        if (dfn[i] == 0) {
-            tarjan(i, 0);
-        }
-    }
+    find_edge_bcc();
 
-    cout << bcc_cnt << '\n';
-    for (int i = 0; i < bcc_cnt; i++) {
-        int sz = bcc_arr[i].size();
-        cout << sz << ' ';
-        for (int j = 0; j < sz; j++) {
-            cout << bcc_arr[i][j] << " \n"[j == sz - 1];
-        }
+    cout << components.size() << '\n';
+    for (const auto &component : components) {
+        cout << component.size();
+        for (int u : component) cout << ' ' << u;
+        cout << '\n';
     }
 
     return 0;
