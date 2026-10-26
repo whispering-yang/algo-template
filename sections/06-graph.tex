@@ -549,25 +549,37 @@ Tarjan算法的过程，直观理解为 \textbf{扎口袋算法}
 
 \lstinputlisting[language=C++]{codes/06-graph-03.cpp}
 
-\subsection{点双连通分量 (Biconnected Component, BCC)}
+\subsection{点双连通分量 (Vertex-Biconnected Component, V-BCC)}
 
-\subsubsection{基本概念}
+\textbf{用途：} 将无向图按割点拆成点双连通分量，用于分析删点后的连通性，以及构造后文的圆方树（Block-Cut Tree）。
 
-\begin{itemize}
-  \item \textbf{定义}：在无向图中，若删除某个顶点后图仍然连通，则该点属于同一个点双连通分量；点双连通分量是极大点双连通子图。
-  \item \textbf{应用}：求割点、割点树、桥连通结构、图的可靠性分析。
-  \item \textbf{特征}：点双连通分量内部不存在割点，且任意两个点之间至少有两条内部点不重复的路径。
-\end{itemize}
-
-\subsubsection{Tarjan 判定条件}
+\subsubsection{核心概念}
 
 \begin{itemize}
-  \item \textbf{割点判定}：对于非根节点 $u$，若存在子节点 $v$ 满足 $\operatorname{low}[v] \ge \operatorname{dfn}[u]$，则 $u$ 是割点。
-  \item \textbf{点双分量构造}：当递归返回时，若 $\operatorname{low}[v] \ge \operatorname{dfn}[u]$，就从栈中弹出一段节点，直到 $v$ 被弹出，形成一个点双连通分量，并把 $u$ 也加入该分量。
-  \item \textbf{单节点特判}：如果一个点没有任何边（或在 DFS 过程中没有子树），则它本身构成一个大小为 $1$ 的点双连通分量；这类情况要在递归结束后单独处理，避免漏掉孤立点。
+  \item \textbf{定义：} 点双是极大的、连通且内部无割点的子图。大小至少为 $3$ 时，任意两点之间存在两条内部点不重复的路径。
+  \item \textbf{退化情况：} 本模板将一条桥及其两个端点作为大小为 $2$ 的点双；孤立点单独作为大小为 $1$ 的点双。自环忽略，因此仅有自环的顶点也按孤立点处理。
+  \item \textbf{分量关系：} 不同点双至多共用一个顶点，共用顶点是原图的割点；每条非自环边恰属于一个点双。割点可以属于多个点双，不能用一个分量编号表示它的全部归属。
+  \item \textbf{搜索状态：} $\operatorname{dfn}[u]$ 为首次访问时间，$\operatorname{low}[u]$ 为 $u$ 的 DFS 子树通过树边及至多一条回边能到达的最小访问时间。
 \end{itemize}
+
+\subsubsection{算法流程}
+
+\begin{enumerate}
+  \item 从每个未访问的顶点开始 DFS，入点时记录 $\operatorname{dfn}$、$\operatorname{low}$ 并将顶点压栈。只跳过一条父边，其余平行边参与回边更新。
+  \item 子节点 $v$ 返回后，用 $\operatorname{low}[v]$ 更新 $\operatorname{low}[u]$。若 $\operatorname{low}[v]\ge\operatorname{dfn}[u]$，从栈中弹出直到 $v$，这些顶点与 $u$ 构成一个点双；$u$ 留在栈中，供后续分量复用。
+  \item DFS 根没有树边子节点时，单独记录该根。此条件仅针对根，普通 DFS 叶子不应额外记录为单点分量。
+  \item 每个连通块处理结束后弹出剩余的根，再搜索下一个连通块。
+\end{enumerate}
+
+\begin{quote}
+\textbf{注意：} 分量析出条件对 DFS 根同样适用，但根为割点要求至少两个树边子节点；非根则只需存在一个满足上述不等式的子节点。点双与边双的划分不同，例如两条边串成的链有两个大小为 $2$ 的点双。
+\end{quote}
+
+\textbf{时间复杂度：} $O(n+m)$；\textbf{空间复杂度：} $O(n+m)$，包含邻接表、顶点栈和所有分量的顶点列表。递归深度最坏为 $O(n)$，深链可能超出运行环境的调用栈限制，应按需改成显式 DFS 栈。
 
 \subsubsection{代码模板}
+
+读入 $n$ 后按需分配邻接表；调用 \code{find\_vertex\_bcc()} 会清空旧结果并重置搜索状态，支持对当前图重复调用。\code{components[id]} 保存第 $id$ 个点双的顶点，分量编号从 $0$ 开始。输出第一行为分量数，其后每行依次输出分量大小和顶点列表，顺序不保证有序。
 
 \lstinputlisting[language=C++]{codes/06-graph-04.cpp}
 

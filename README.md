@@ -17,11 +17,14 @@
     ├── 05-geometry.tex        # 计算几何
     ├── 06-graph.tex           # 图论
     ├── 07-networkflow.tex     # 网络流
-    ├── 08-math.tex            # 数学
-    ├── 09-offline.tex         # 离线算法
-    ├── 10-utilities.tex       # 实用工具
-    ├── 11-debug.tex           # 本地调试
-    └── 12-optimization.tex    # 常数优化
+    ├── 08-polynomial.tex      # 多项式与生成函数
+    ├── 09-number-theory.tex   # 数论
+    ├── 10-linear-algebra.tex  # 线性代数
+    ├── 11-game-theory.tex     # 博弈论
+    ├── 12-offline.tex         # 离线算法
+    ├── 13-utilities.tex       # 实用工具
+    ├── 14-debug.tex           # 本地调试
+    └── 15-optimization.tex    # 常数优化
 ```
 
 ## 编译

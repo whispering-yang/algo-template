@@ -1,0 +1,372 @@
+\section{数论}
+
+\subsection{素数筛 (Prime Sieve)}
+
+\subsubsection{埃氏筛 (Sieve of Eratosthenes)}
+
+\textbf{用途：}
+在 $O(n \log \log n)$ 时间内找出 $[2, n]$ 内的所有质数，是最基础、最常用的质数筛选方法。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{标记合数：} 从最小的质数 $2$ 开始，依次把它的倍数标记为合数；遍历结束后仍未被标记的数即为质数。
+    \item \textbf{从 $i^2$ 开始筛：} 对质数 $i$，小于 $i^2$ 的倍数 $2i, 3i, \dots, (i-1)i$ 都含有更小的质因子，已被更早的质数标记过，因此只需从 $i^2$ 开始，避免重复标记。
+    \item \textbf{只需筛到 $\sqrt{n}$：} 若 $i > \sqrt{n}$，则 $i^2 > n$，无需继续。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+    \item 初始化布尔数组 \texttt{isPrime[2..n]} 全部为 \texttt{true}（下标 $0, 1$ 置为 \texttt{false}）。
+    \item 枚举 $i = 2, 3, \dots, \lfloor\sqrt{n}\rfloor$：若 $i$ 仍为质数，则标记 $i^2, i^2+i, i^2+2i, \dots \le n$ 为合数。
+    \item 遍历 $[2, n]$，值仍为 \texttt{true} 的下标即全部质数。
+\end{enumerate}
+
+\textbf{时间复杂度：} $O(n \log \log n)$，空间复杂度 $O(n)$（使用 \texttt{bitset} 可压缩为 $O(n/8)$ 字节）。
+
+\lstinputlisting[language=C++]{codes/09-number-theory-01.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 实际标记次数约为 $n \sum_{p \le \sqrt{n}} \frac{1}{p} = O(n \log \log n)$，当 $n \le 10^7$ 时运行速度很快。
+    \item 若只需要判断单个大数是否为质数，应使用 Miller--Rabin 素性测试而非筛法。
+\end{itemize}
+
+\subsubsection{欧拉筛 (Euler's Sieve / Linear Sieve)}
+
+\textbf{说明：} 欧拉筛（线性筛）的实现已并入下文「欧拉函数与欧拉定理」一节的\textbf{线性筛求欧拉函数}小节，其中同时给出质数表、欧拉函数递推与最小质因子数组（可用于 $O(\log x)$ 质因数分解），请查阅该节内容。埃氏筛实现更简单、常数更小，配合 \code{bitset} 更省内存；欧拉筛复杂度严格线性且易于扩展，两者按需选用。
+
+\subsection{扩展欧几里得 (Extended Euclidean Algorithm)}
+
+\textbf{用途：}
+求不定方程 $ax + by = \gcd(a, b)$ 的一组整数解，进而解决：任意模数（不要求质数）下的乘法逆元、线性同余方程 $ax \equiv c \pmod{m}$，以及中国剩余定理 (CRT) 中同余方程的合并。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{裴蜀定理 (Bézout's Identity)：} $ax + by$ 能取到的最小正整数恰为 $\gcd(a, b)$，故 $ax + by = c$ 有整数解当且仅当 $\gcd(a, b) \mid c$。
+    \item \textbf{递归回代：} 设已求得 $b\,x_1 + (a \bmod b)\,y_1 = g$，代入 $a \bmod b = a - \lfloor a/b \rfloor \cdot b$ 整理得 $x = y_1$，$y = x_1 - \lfloor a/b \rfloor\, y_1$；边界 $b = 0$ 时取 $x = 1$，$y = 0$。
+    \item \textbf{通解与最小非负解：} 由特解 $(x_0, y_0)$ 得通解 $x = x_0 + k\cdot\dfrac{b}{g}$，$y = y_0 - k\cdot\dfrac{a}{g}$（$k$ 为任意整数）；最小非负 $x$ 为 $\left(x_0 \bmod \dfrac{b}{g} + \dfrac{b}{g}\right) \bmod \dfrac{b}{g}$。
+    \item \textbf{求逆元：} $\gcd(a, m) = 1$ 时，$ax \equiv 1 \pmod{m}$ 的解即 $x \bmod m$，这是费马小定理求逆元在\textbf{非质数模数}下的替代方案。
+\end{itemize}
+
+\textbf{时间复杂度：} 与普通欧几里得算法相同，为 $O(\log \min(a, b))$。
+
+\lstinputlisting[language=C++]{codes/09-number-theory-02.cpp}
+
+\begin{quote}
+\textbf{注意：} 递归求出的特解满足 $|x| \le \dfrac{b}{g}$，$|y| \le \dfrac{a}{g}$，本身不会溢出；但特解参与「先乘后取模」的运算时仍需 \code{\_\_int128} 或先取模防溢出。
+\end{quote}
+
+\subsection{线性同余方程组 (System of Linear Congruences)}
+
+\subsubsection{中国剩余定理 CRT (Chinese Remainder Theorem)}
+
+\textbf{用途：}
+求解\textbf{模数两两互质}的同余方程组：给定 $n$ 组 $r_i,\, m_i$，求同时满足
+\[ x \equiv r_i \pmod{m_i}, \quad i = 1, 2, \dots, n \]
+的整数 $x$。定理保证解在模 $M = \prod_{i} m_i$ 意义下\textbf{存在且唯一}。模数不互质时需改用扩展中国剩余定理 (exCRT)。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item \textbf{构造解：} 令 $M = \prod_i m_i$，$c_i = M / m_i$。两两互质保证 $\gcd(c_i, m_i) = 1$，逆元 $t_i = c_i^{-1} \bmod m_i$ 存在，则
+  \[ x \;=\; \sum_{i=1}^{n} r_i\, c_i\, t_i \;\bmod M \]
+  即为解：代入第 $j$ 个方程时，$i \ne j$ 的项都含因子 $m_j$ 而消失，只剩 $r_j\, c_j\, t_j \equiv r_j \pmod{m_j}$。
+  \item \textbf{唯一性：} 若 $x_1, x_2$ 都是解，则每个 $m_i$ 都整除 $x_1 - x_2$；两两互质下 $M \mid x_1 - x_2$，故解在模 $M$ 意义下唯一。
+  \item \textbf{典型用法：} 把大模数拆成若干互质的小模数分别计算（如按质因子幂拆分），再用 CRT 合并；计算结果超出普通整数范围时，也可用多个互质模数下的余数联合表示。
+\end{itemize}
+
+\textbf{时间复杂度：} $O(n \log M)$，即每个方程一次扩展欧几里得求逆元。
+
+\lstinputlisting[language=C++]{codes/09-number-theory-03.cpp}
+
+\begin{quote}
+\textbf{注意：} 累加项 $r_i\, c_i\, t_i$ 可达 $M \cdot m_i$ 量级，\code{int64\_t} 直接相乘会溢出，模板中用 \code{\_\_int128} 完成乘法并逐步对 $M$ 取模。要求 $0 \le r_i < m_i$，且乘积 $M$ 不超出 \code{int64\_t} 范围。
+\end{quote}
+
+\subsubsection{扩展中国剩余定理 exCRT (Extended CRT)}
+
+\textbf{用途：}
+求解\textbf{模数不要求互质}的同余方程组 $x \equiv r_i \pmod{m_i}$：有解时返回 $[0, \operatorname{lcm})$ 内的唯一解（$\operatorname{lcm}$ 为所有模数的最小公倍数），方程组矛盾时返回 $-1$。互质情形的闭式构造失效，改为\textbf{两两合并}方程。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item \textbf{合并两方程：} 设已合并部分为 $x \equiv R \pmod{M}$，与 $x \equiv r_2 \pmod{m_2}$ 合并时，把前者写成 $x = R + kM$ 代入后者，得关于 $k$ 的线性同余方程
+  \[ kM \;\equiv\; r_2 - R \pmod{m_2}. \]
+  \item \textbf{可解性：} 令 $g = \gcd(M, m_2)$，由裴蜀定理，该方程有解当且仅当 $g \mid (r_2 - R)$；不满足则整个方程组无解。
+  \item \textbf{解出 $k$：} 方程两边与模数同除以 $g$：$k \cdot \dfrac{M}{g} \equiv \dfrac{r_2 - R}{g} \pmod{\tfrac{m_2}{g}}$，此时两系数互质，用扩展欧几里得求得 $\left(\dfrac{M}{g}\right)^{-1}$，故
+  \[ k \;\equiv\; \frac{r_2 - R}{g} \cdot \left(\frac{M}{g}\right)^{-1} \pmod{\tfrac{m_2}{g}}. \]
+  \item \textbf{更新方程：} 取最小非负 $k \in [0, m_2/g)$，合并结果为 $x \equiv R + kM \pmod{\operatorname{lcm}(M, m_2)}$，新模数 $\operatorname{lcm}(M, m_2) = \dfrac{M}{g} \cdot m_2$。从 $x \equiv 0 \pmod 1$ 出发依次合并所有方程即得答案。
+\end{itemize}
+
+\textbf{算法流程：}
+
+\begin{enumerate}
+  \item 初始化已合并方程 $x \equiv 0 \pmod 1$（对任何整数恒成立，可吸收任意方程）。
+  \item 对每个 $(r_i, m_i)$：求 $g = \gcd(M, m_i)$，若 $g \nmid (r_i - R)$，返回 $-1$。
+  \item 按上式解出最小非负 $k$，更新 $R \gets R + kM$（自动落在 $[0, \text{新模数})$ 内）、$M \gets M/g \cdot m_i$；全部合并后 $R$ 即答案。
+\end{enumerate}
+
+\textbf{时间复杂度：} $O(n \log \max m_i)$，每次合并一次扩展欧几里得。
+
+\lstinputlisting[language=C++]{codes/09-number-theory-04.cpp}
+
+\begin{quote}
+\textbf{注意：} 中间乘积 $(r_i - R) \cdot x$ 与 $kM$ 都可能超出 \code{int64\_t}，模板用 \code{\_\_int128} 相乘后立即取模；要求所有模数的最小公倍数不超出 \code{int64\_t} 范围。C++ 整数除法向零截断、取模结果带符号，模板统一用「先 \code{\%}、再 \code{+}、再 \code{\%}」把解平移到非负区间。
+\end{quote}
+
+\subsection{欧拉函数与欧拉定理 (Euler's Totient Function and Euler's Theorem)}
+
+\subsubsection{欧拉函数的定义与性质 (Definition and Properties)}
+
+\textbf{用途：}
+欧拉函数 (Euler's Totient Function) $\varphi(n)$ 表示 $1 \sim n$ 中与 $n$ 互质的数的个数，是模运算、求逆元、阶与原根等数论问题的基石；欧拉定理则给出模意义下幂的周期上界。
+
+\textbf{定义：}
+\[
+\varphi(n) = \sum_{k=1}^{n} [\gcd(k, n) = 1]
+\]
+前几个值：$\varphi(1) = 1$，$\varphi(2) = 1$，$\varphi(3) = 2$，$\varphi(4) = 2$，$\varphi(6) = 2$，$\varphi(12) = 4$。
+
+\textbf{核心性质：}
+\begin{itemize}
+    \item \textbf{素数幂：} $\varphi(p^{k}) = p^{k} - p^{k-1} = p^{k-1}(p-1)$，因为 $1 \sim p^{k}$ 中 $p$ 的倍数恰有 $p^{k-1}$ 个；特别地，素数 $p$ 满足 $\varphi(p) = p - 1$。
+    \item \textbf{积性：} 若 $\gcd(m, n) = 1$，则 $\varphi(mn) = \varphi(m) \cdot \varphi(n)$。注意积性\textbf{要求互质}：$\varphi(4) \neq \varphi(2) \cdot \varphi(2)$，这是最常见的记错点。
+    \item \textbf{通项公式：} 设 $n = \prod p_i^{e_i}$，则 $\varphi(n) = n \prod_{p \mid n} \left(1 - \frac{1}{p}\right)$，由前两条性质拼接而来，也是单点求法（试除）的依据。
+    \item \textbf{约数和：} $\sum_{d \mid n} \varphi(d) = n$。证明思路：把分数 $\frac{1}{n}, \frac{2}{n}, \dots, \frac{n}{n}$ 全部约分成最简形式，分母为 $d$ 的恰有 $\varphi(d)$ 个。这条性质是反演与筛法的常客，例如 $\sum_{i=1}^{n} \gcd(i, n) = \sum_{d \mid n} d \cdot \varphi(n/d)$。
+    \item \textbf{推论：} $\varphi(1) = 1$；$n \ge 3$ 时 $\varphi(n)$ 为偶数（把 $k$ 与 $n-k$ 配对即可）。
+\end{itemize}
+
+\subsubsection{试除法求欧拉函数 (Trial Division)}
+
+\textbf{用途：}
+单独求某个 $\varphi(n)$（$n$ 可达 $10^{18}$ 级别）：按通项公式，在试除分解质因数的同时累乘 $\left(1 - \frac{1}{p}\right)$。
+
+\textbf{时间复杂度：} $O(\sqrt{n})$。
+
+\lstinputlisting[language=C++]{codes/09-number-theory-05.cpp}
+
+\begin{quote}
+\textbf{注意：} 累乘必须写成 \code{result = result / p * (p - 1)}，先除后乘；写成 \code{result * (p - 1) / p} 会因中间结果过大而溢出。
+\end{quote}
+
+\subsubsection{线性筛求欧拉函数 (Linear Sieve)}
+
+\textbf{用途：}
+批量求 $\varphi(1) \sim \varphi(n)$，即欧拉筛（线性筛）——每个合数只被其最小质因子筛掉一次，在筛的同时递推 $\varphi$，并记录最小质因子数组 \code{min\_prime\_factor}，支持 $O(\log x)$ 质因数分解。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item $i$ 是素数：$\varphi(i) = i - 1$。
+    \item $p$ 为 $i$ 的最小质因子（$p \mid i$）：$\varphi(ip) = \varphi(i) \cdot p$，因为 $ip$ 与 $i$ 的质因子集合完全相同，通项中 $n$ 多乘一个 $p$ 而 $\left(1 - \frac{1}{p}\right)$ 不变。
+    \item $p \nmid i$（互质）：直接用积性 $\varphi(ip) = \varphi(i) \cdot (p-1)$。
+\end{itemize}
+
+\textbf{时间复杂度：} 严格 $O(n)$，空间复杂度 $O(n)$。
+
+\lstinputlisting[language=C++]{codes/09-number-theory-06.cpp}
+
+\subsubsection{欧拉定理与费马小定理 (Euler's Theorem and Fermat's Little Theorem)}
+
+\textbf{欧拉定理：} 若 $\gcd(a, m) = 1$，则
+\[
+a^{\varphi(m)} \equiv 1 \pmod{m}
+\]
+直觉：幂序列 $1, a, a^{2}, \dots$ 在模 $m$ 下取值有限，必有循环节；欧拉定理说明循环节长度（即「阶」）不超过 $\varphi(m)$，且整除 $\varphi(m)$。
+
+\textbf{费马小定理：} $p$ 为素数且 $p \nmid a$ 时，$a^{p-1} \equiv 1 \pmod{p}$，即欧拉定理取 $m = p$ 的特例；移项得 $a \cdot a^{p-2} \equiv 1 \pmod{p}$，这正是「素数模数用快速幂求逆元」的出处。
+
+\begin{quote}
+\textbf{注意：} 两个定理都要求底数与模数\textbf{互质}；不互质时只能用扩展欧拉定理降幂。
+\end{quote}
+
+\subsubsection{扩展欧拉定理 (Extended Euler's Theorem)}
+
+\textbf{用途：}
+指数 $b$ 过大（高精度字符串、递推产生、$10^{18}$ 级别）时求 $a^{b} \bmod m$，用降幂把指数压进 $O(\varphi(m))$ 以内，分三种情形：
+\begin{enumerate}
+    \item $\gcd(a, m) = 1$：$a^{b} \equiv a^{\,b \bmod \varphi(m)} \pmod{m}$；
+    \item $\gcd(a, m) > 1$ 且 $b < \varphi(m)$：$a^{b}$ 直接计算，\textbf{不能}降幂；
+    \item $\gcd(a, m) > 1$ 且 $b \ge \varphi(m)$：$a^{b} \equiv a^{\,b \bmod \varphi(m) + \varphi(m)} \pmod{m}$。
+\end{enumerate}
+
+竞赛惯用写法：不判互质，统一按第三条处理，但必须确认 $b \ge \varphi(m)$——指数以字符串读入时，边取模边记录「是否已达到 $\varphi(m)$」。
+
+\textbf{易错点：}
+\begin{itemize}
+    \item 积性要求互质：$\varphi(2n) = 2\varphi(n)$ 仅在 $n$ 为奇数时成立。
+    \item 线性筛的转移：$p \mid i$ 时乘 $p$，$p \nmid i$ 时乘 $p-1$，写反全错；别忘了 \code{phi[1] = 1}。
+    \item 降幂加 $\varphi(m)$ 的前提是 $b \ge \varphi(m)$，指数读入为字符串时必须同时维护大小关系，不能只取模。
+\end{itemize}
+
+\subsection{阶与原根 (Multiplicative Order and Primitive Root)}
+
+\subsubsection{阶 (Multiplicative Order)}
+
+\textbf{用途：}
+阶刻画了模意义下幂运算的循环节长度，是判定原根、构造离散对数（BSGS）以及分析循环群结构的基础。
+
+\textbf{定义：} $\gcd(a, m) = 1$ 时，使
+\[
+a^{k} \equiv 1 \pmod{m}
+\]
+成立的\textbf{最小正整数} $k$ 称为 $a$ 模 $m$ 的阶，记作 $\operatorname{ord}_m(a)$。
+
+\textbf{核心性质：}
+\begin{itemize}
+    \item \textbf{整除性：} $\operatorname{ord}_m(a) \mid \varphi(m)$，即欧拉定理的直接推论（幂序列的循环节长度不超过 $\varphi(m)$）。
+    \item \textbf{等价判定：} $a^{k} \equiv 1 \pmod{m} \iff \operatorname{ord}_m(a) \mid k$。因此判断 $a$ 的幂是否回到 $1$，只需检查阶的约数。
+    \item \textbf{互不相同：} $0, 1, \dots, \operatorname{ord}_m(a)-1$ 使 $a^0, a^1, \dots, a^{\operatorname{ord}-1}$ 两两不同，之后循环。
+\end{itemize}
+
+\textbf{求阶算法：} 由整除性，阶必为 $\varphi(m)$ 的约数。先求 $\varphi(m)$ 并分解质因数，令 $x = \varphi(m)$，对每个质因子 $p$ 反复试除：若 $p \mid x$ 且 $a^{x/p} \equiv 1 \pmod{m}$，则 $x \gets x/p$；无法继续缩小即得最小阶。
+
+\textbf{时间复杂度：} 试除分解 $O(\sqrt{m})$，求阶本身只需 $O(\omega \log m \cdot \log m)$ 次运算（$\omega$ 为 $\varphi(m)$ 的质因子个数，不超过 $6 \sim 7$）。
+
+\subsubsection{原根 (Primitive Root)}
+
+\textbf{定义：} 若 $\operatorname{ord}_m(g) = \varphi(m)$，则称 $g$ 为模 $m$ 的\textbf{原根} (Primitive Root)。此时 $g^0, g^1, \dots, g^{\varphi(m)-1}$ 取遍模 $m$ 的全部与 $m$ 互质的剩余类——原根生成整个缩系。
+
+\textbf{存在性定理：} 模 $m$ 存在原根 $\iff m \in \{1,\ 2,\ 4,\ p^{e},\ 2p^{e}\}$（$p$ 为奇素数）。特别地，\textbf{素数模一定有原根}；若 $m$ 有原根，则原根恰有 $\varphi(\varphi(m))$ 个。
+
+\textbf{判定方法：} $g$ 是模 $m$ 的原根 $\iff \gcd(g, m) = 1$ 且对 $\varphi(m)$ 的\textbf{每个质因子} $q$，$g^{\varphi(m)/q} \not\equiv 1 \pmod{m}$。（若 $g$ 的阶不是 $\varphi(m)$，则阶必为某个 $\varphi(m)/q$ 的约数，该检查恰好把所有情形排除。）
+
+\textbf{求最小原根：} 从 $g = 2$ 起依次用上述判定检验，第一个通过的就是最小原根。经验上素数模的最小原根通常不超过 $100$（如 $998244353$ 的最小原根为 $3$），枚举量极少。
+
+\textbf{应用：} NTT 模数取单位根（$\omega_n = g^{(P-1)/n}$）、离散对数问题、指标映射与随机化哈希等。
+
+\textbf{时间复杂度：} 单次判定 $O(\omega \log^2 m)$；求最小原根再乘以枚举个数（实际为小常数）。
+
+\lstinputlisting[language=C++]{codes/09-number-theory-07.cpp}
+
+\begin{quote}
+\textbf{注意：} 常用 NTT 模数的原根无需现算：$998244353$、$1004535809$、$469762049$ 的最小原根均为 $3$，可直接使用。
+\end{quote}
+
+\subsection{离散对数 (Discrete Logarithm)}
+
+\subsubsection{大步小步算法 BSGS (Baby-Step Giant-Step)}
+
+\textbf{用途：}
+求解\textbf{离散对数}问题：给定 $a, b, m$，求最小非负整数 $x$ 使得 $a^{x} \equiv b \pmod{m}$；无解返回 $-1$。要求 $\gcd(a, m) = 1$，不互质的情形需用扩展 BSGS (exBSGS)。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item \textbf{分块：} 令 $t = \lceil \sqrt{m} \rceil$。由 $\gcd(a, m)=1$ 知 $a$ 的阶不超过 $\varphi(m) < m \le t^2$，故解若存在必可写成 $x = i \cdot t - j$，其中大步 $i \in [1, t]$，小步 $j \in [0, t)$。
+  \item \textbf{变形消去除法：} $a^{it} \equiv b \cdot a^{j}$——同余式两边同乘 $a^j$ 后移项，避免求逆元，也无需逐个比较。
+  \item \textbf{小步建表：} 枚举 $j$，把 $b \cdot a^j \bmod m$ 存入哈希表；重复的值保留\textbf{更大}的 $j$，使同一大步下解最小。
+  \item \textbf{大步查表：} 枚举 $i$，计算 $a^{it} \bmod m$（每次乘一步长 $a^t$），命中哈希表即得 $x = i \cdot t - j$；枚举顺序保证返回最小非负解。
+\end{itemize}
+
+\textbf{算法流程：}
+
+\begin{enumerate}
+  \item 特判 $m = 1$ 或 $b \equiv 1 \pmod m$，答案为 $0$。
+  \item 求 $t = \lceil \sqrt{m} \rceil$，小步枚举 $j = 0 \dots t-1$，哈希表存 $(b \cdot a^j, j)$。
+  \item 计算 $a^t$；大步枚举 $i = 1 \dots t$，维护 $cur = a^{it} \bmod m$，查表命中则返回 $i \cdot t - \mathit{bs}[cur]$。
+  \item 全部枚举完仍未命中，返回 $-1$。
+\end{enumerate}
+
+\textbf{时间复杂度：} $O(\sqrt{m})$ 次乘法与哈希操作，空间复杂度 $O(\sqrt{m})$。
+
+\lstinputlisting[language=C++]{codes/09-number-theory-08.cpp}
+
+\begin{quote}
+\textbf{注意：} 哈希表可直接用 \code{unordered\_map}（均摊 $O(1)$）；被卡常时可手写开放寻址哈希或对结果 \code{sort} 后二分。若 $\gcd(a, m) \ne 1$，本模板结论不可靠，必须先约去公因子（exBSGS）。
+\end{quote}
+
+\subsubsection{扩展大步小步算法 exBSGS (Extended BSGS)}
+
+\textbf{用途：}
+求解\textbf{不要求互质}情形的离散对数：给定 $a, b, m$，求最小非负整数 $x$ 使得 $a^{x} \equiv b \pmod{m}$；无解返回 $-1$。普通 BSGS 需要 $\gcd(a, m) = 1$，exBSGS 通过不断约去 $a$ 与 $m$ 的公因子，把一般情形化归为互质情形。
+
+\textbf{核心原理：}
+
+\begin{itemize}
+  \item \textbf{可解性：} 设 $g = \gcd(a, m) > 1$。若解存在，则 $g \mid a^{x}$ 且 $g \mid m$，从而必有 $g \mid b$；否则无解。
+  \item \textbf{约去公因子：} 由 $g \mid a^{x} - b$，把同余式两边与模数同除以 $g$：
+  \[ a^{x-1} \cdot \frac{a}{g} \;\equiv\; \frac{b}{g} \pmod{\tfrac{m}{g}}. \]
+  每约一步，方程左侧多出一个已知系数。重复约去，直到 $\gcd(a, m) = 1$；由于每步 $m$ 至少减半，约分至多 $O(\log m)$ 步。
+  \item \textbf{累积系数：} 设共约去 $cnt$ 步，累积系数 $d = \prod_k \frac{a}{g_k} \bmod m$，则原方程等价于
+  \[ a^{\,x - cnt} \cdot d \;\equiv\; b \pmod{m}. \]
+  注意每步的 $\frac{a}{g_k}$ 与约分后的模数互质，故 $\gcd(d, m) = 1$，$d$ 存在逆元。
+  \item \textbf{回代求解：} 方程化为 $a^{y} \equiv b \cdot d^{-1} \pmod{m}$，其中 $y = x - cnt \ge 0$；用普通 BSGS 求出最小 $y$，答案即 $y + cnt$。
+  \item \textbf{提前命中：} 若某步约分后恰好 $d = b$，则 $x = cnt$ 即为解，直接返回。事实上若 $[1, cnt]$ 内存在解，则第 $x$ 步约分后必有 $d = b$，故提前返回恰好取到最小解，不会漏掉更小的 $x$。
+\end{itemize}
+
+\textbf{算法流程：}
+
+\begin{enumerate}
+  \item 特判 $m = 1$ 或 $b \equiv 1 \pmod m$，答案为 $0$。
+  \item 取 $g = \gcd(a, m)$：若 $g = 1$ 转步骤 3；若 $g \nmid b$ 返回 $-1$；否则 $b$ 与 $m$ 同除以 $g$，$d$ 乘上 $a/g$（对 $m$ 取模），$cnt$ 加一；若 $d = b$ 返回 $cnt$，否则重复本步。
+  \item 用扩展欧几里得求 $d^{-1} \bmod m$，对 $a^{y} \equiv b \cdot d^{-1} \pmod{m}$ 跑普通 BSGS 得 $y$；$y = -1$ 则无解，否则返回 $y + cnt$。
+\end{enumerate}
+
+\textbf{时间复杂度：} 约去公因子至多 $O(\log m)$ 步（每步一次 gcd），主体仍为 $O(\sqrt{m})$ 次乘法与哈希操作，空间复杂度 $O(\sqrt{m})$。
+
+\lstinputlisting[language=C++]{codes/09-number-theory-09.cpp}
+
+\begin{quote}
+\textbf{注意：} $b \equiv 0 \pmod m$（即 $a^{x} \equiv 0$）的情形无需特判，约分过程会自动处理，如 $2^{x} \equiv 0 \pmod 8$ 得 $x = 3$。求最小解时「$d = b$ 即返回 $cnt$」的检查不可省略，否则会漏掉小于 $cnt$ 的解。
+\end{quote}
+
+\subsection{狄利克雷前缀和与后缀和 (Dirichlet Prefix and Suffix Sum)}
+
+\textbf{用途：}
+在整除偏序上做快速求和：给定定义在 $[1, N]$ 上的数列 $f$，$O(N\log\log N)$ 内一次性求出
+\[ \text{前缀和（约数和）：}\; g(n)=\sum_{d\mid n}f(d) \qquad\text{或}\qquad \text{后缀和（倍数和）：}\; g(n)=\sum_{\substack{n\mid d\\ d\le N}}f(d) \]
+的全部函数值，优于逐个枚举约数的 $O(N\log N)$ 与暴力 $O(N^2)$。它是子集求和 SOS (Sum over Subsets) 把二进制位换成质因子指数、把「子集包含」换成「整除」的版本；逆变换即莫比乌斯反演方向，可批量完成 $\sum_{d\mid n}\mu(n/d)\,g(n/d)$ 型变换而无需筛出 $\mu$。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{指数向量视角：} 把 $m=\prod_i p_i^{e_i}$ 看作指数向量 $(e_1,e_2,\dots)$，则 $d\mid m\iff$ 每一维上 $d$ 的指数都不超过 $m$ 的指数。整除偏序恰为指数向量按维比较的乘积偏序。
+    \item \textbf{逐维累加：} SOS 对每个二进制位做一遍前缀和，这里对每个质数 $p\le N$ 做「沿 $p$ 的指数维」的前缀和：枚举 $j=1,\dots,\lfloor N/p\rfloor$，执行 \code{a[j*p] += a[j]}。$j$ 递增使累加沿同一条链逐级传递（$p^2$ 继承 $p$ 的部分和、$p^3$ 再继承 $p^2$，如此覆盖所有指数）；各质数维相互独立，质数之间的处理顺序不影响结果。后缀和对偶地枚举 $j=\lfloor N/p\rfloor,\dots,1$，执行 \code{a[j] += a[j*p]}。
+    \item \textbf{逆变换（莫比乌斯方向）：} 前缀和是沿维累加，逆变换即沿维差分，恰好实现 $f=\mu*g$（$\mu$ 为莫比乌斯函数，$*$ 为 Dirichlet 卷积）。实现上把 $+=$ 换成 $-=$ 并\textbf{将内层枚举反向}，原因见下方注意。
+\end{itemize}
+
+\textbf{时间复杂度：} 内层循环总次数 $\sum_{p\le N}\lfloor N/p\rfloor=O(N\log\log N)$（Mertens 第二定理），空间复杂度 $O(N)$，另需一次线性筛出质数表。
+
+\lstinputlisting[language=C++]{codes/09-number-theory-10.cpp}
+
+\begin{quote}
+\textbf{注意：} 正变换的内层方向不可写反（前缀和 $j$ 递增、后缀和 $j$ 递减，否则该维不是前缀/后缀和）；逆变换在 $-=$ 的同时必须把内层\textbf{反方向}枚举——差分引用的一侧必须是本趟尚未更新的原值，方向不反时深度 $\ge 3$ 的链（如 $p^3\mid n$）会算成交错和。
+\end{quote}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 四个变换均原地、可逆：先做前缀和、再用倒序的 $-=$ 版本即可还原原数组，后缀和同理（内层方向相反）。
+    \item 模意义下使用时，在每次加/减后对模数取模即可：元素已归约时单步加减至多使绝对值翻倍，不会溢出 \code{int64\_t}。
+    \item 典型应用：批量求约数个数 $d(n)=\sum_{d\mid n}1$ 与约数和 $\sigma(n)=\sum_{d\mid n}d$；莫比乌斯反演的两种方向变换；后缀和适合「对每个 $i$ 汇总其所有倍数的贡献」型统计。
+\end{itemize}
+
+\subsection{莫比乌斯函数与莫比乌斯反演 (Möbius Function and Möbius Inversion)}
+
+\textbf{用途：}
+已知 $F(n)=\sum_{d\mid n}G(d)$ 时反解出 $G(n)$，本质是数论函数在狄利克雷卷积意义下的「容斥差分」。最常见的应用是 $\gcd$ 计数类问题：先用 $\mu$ 把 $[\gcd(i,j)=k]$ 这类整除条件展开成可计算的整除分块求和，再把单次询问降到 $O(\sqrt{n})$。
+
+\textbf{核心概念：}
+\begin{itemize}
+    \item \textbf{莫比乌斯函数：}
+    \[ \mu(n)=\begin{cases}1 & n=1\\ 0 & n\text{ 含平方因子}\\ (-1)^k & n\text{ 为 }k\text{ 个互异质因子之积}\end{cases} \]
+    它是恒 $1$ 函数 $\mathbf{1}$ 在狄利克雷卷积下的逆元：$\mu * \mathbf{1} = \varepsilon$（$\varepsilon(1)=1$，其余为 $0$）。
+    \item \textbf{关键恒等式：} $\sum_{d\mid n}\mu(d) = [n=1]$，即 $\mu$ 在全部约数上的和恰筛选出 $n=1$，这是反演的出发点。
+    \item \textbf{约数形式反演：} $F(n)=\sum_{d\mid n}G(d)\iff G(n)=\sum_{d\mid n}\mu(d)\,F(n/d)$。
+    \item \textbf{倍数形式反演：} $f(n)=\sum_{n\mid d}g(d)\iff g(n)=\sum_{n\mid d}\mu(d/n)\,f(d)$，$\gcd$ 计数中最常用。
+    \item \textbf{积性：} $\mu$ 是积性函数，可线性筛；配合前缀和即可在整除分块中 $O(1)$ 求区间和。
+\end{itemize}
+
+\textbf{算法流程（经典套路，求 $\sum_{i=1}^{n}\sum_{j=1}^{m}[\gcd(i,j)=k]$）：}
+\begin{enumerate}
+    \item 设 $f(t)$ 为满足 $t\mid\gcd(i,j)$ 的对数，则 $f(t)=\lfloor n/t\rfloor\lfloor m/t\rfloor$；记 $g(t)$ 为 $\gcd$ 恰为 $t$ 的对数，所求即 $g(k)$。由 $f(t)=\sum_{t\mid d}g(d)$ 用倍数形式反演得 $g(k)=\sum_{k\mid d}\mu(d/k)\,f(d)$。
+    \item 换元 $d=k\,d'$：$g(k)=\sum_{d'=1}^{\min(n,m)/k}\mu(d')\left\lfloor\frac{n}{k\,d'}\right\rfloor\left\lfloor\frac{m}{k\,d'}\right\rfloor$。
+    \item 对 $\lfloor n/(k\,d')\rfloor$ 与 $\lfloor m/(k\,d')\rfloor$ 同时整除分块：商相同的一整段内系数是 $\mu$ 的区间和，用前缀和 $O(1)$ 取出，单次询问 $O(\sqrt{n})$。
+\end{enumerate}
+
+\textbf{时间复杂度：} 筛 $\mu$ 与前缀和 $O(N)$；每次询问整除分块 $O(\sqrt{n})$。多组询问共用一份前缀和摊销更优。
+
+\begin{quote}
+\textbf{注意：} $d'$ 的枚举上界是 $\lfloor\min(n,m)/k\rfloor$；分块右端点须对两个商的边界与上界同时取 $\min$，否则会越界或漏段。
+\end{quote}
+
+\lstinputlisting[language=C++]{codes/09-number-theory-11.cpp}

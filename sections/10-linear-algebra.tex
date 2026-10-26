@@ -1,0 +1,87 @@
+\section{线性代数}
+
+
+\subsection{矩阵乘法 (Matrix Multiplication)}
+
+\textbf{用途：}
+在 $O(nmk)$ 时间内计算两个矩阵的乘积。若矩阵 $A$ 为 $n \times m$，矩阵 $B$ 为 $m \times p$，则乘积 $C = A \times B$ 为 $n \times p$，其中
+$C_{i,j} = \sum_{k=0}^{m-1} A_{i,k} B_{k,j}$。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{三重循环：} 直接按定义枚举中间维度 $k$。
+    \item \textbf{复杂度：} 乘法时间复杂度为 $O(nmp)$，空间复杂度为 $O(np)$。
+    \item \textbf{适用场景：} 适合处理较小规模矩阵，或作为矩阵快速幂和动态规划中的基础子过程。
+\end{itemize}
+
+\textbf{代码模板：}
+
+\lstinputlisting[language=C++]{codes/10-linear-algebra-01.cpp}
+
+\subsection{矩阵快速幂 (Matrix Fast Power)}
+
+\textbf{用途：}
+在 $O(n^3 \log k)$ 时间内求解矩阵 $A^k$，常用于递推数列、状态转移和线性递推问题。对于方阵 $A$，可以通过二进制分解将幂运算降为若干次矩阵乘法。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{二进制分解：} 将指数 $k$ 写成二进制形式，按位处理。
+    \item \textbf{递推维护：} 维护当前结果矩阵 $res$ 和底矩阵 $base$，当某一位为 $1$ 时更新 $res = res \times base$。
+    \item \textbf{平方更新：} 每轮都将 $base$ 自乘一次，从而在 $O(\log k)$ 轮内得到 $A^k$。
+\end{itemize}
+
+\textbf{时间复杂度：} 预处理和每轮乘法依赖矩阵乘法，整体复杂度为 $O(n^3 \log k)$。空间复杂度为 $O(n^2)$。
+
+\textbf{代码模板：}
+
+\lstinputlisting[language=C++]{codes/10-linear-algebra-02.cpp}
+
+\subsection{高斯消元 (Gaussian Elimination)}
+
+\textbf{用途：}
+求解 $n$ 元一次线性方程组 $A \boldsymbol{x} = \boldsymbol{b}$，其中 $A$ 为 $n \times n$ 系数矩阵，$\boldsymbol{b}$ 为常数向量。也可用于计算矩阵的行列式和秩。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{行初等变换：} 通过倍加、交换、缩放三种操作将增广矩阵化为行阶梯形，再回代求解。
+    \item \textbf{列主元：} 每次选取当前列中绝对值最大的行作为主元行，交换到当前行再消去，以减小浮点误差。
+    \item \textbf{无解 / 无穷解判定：} 消元后若出现系数全为 $0$ 而常数非 $0$ 的行则无解；若出现全 $0$ 行则有无穷多解。
+\end{itemize}
+
+\textbf{时间复杂度：} $O(n^3)$，消元过程为三层循环。空间复杂度 $O(n^2)$。
+
+\textbf{代码模板：}
+
+\lstinputlisting[language=C++]{codes/10-linear-algebra-03.cpp}
+
+\subsection{线性基 (Linear Basis)}
+
+\textbf{用途：}
+在 $O(\log V)$ 时间内维护一组数的异或 (XOR) 张成空间，支持查询最大/最小异或值、第 $k$ 小异或值以及合并两个线性基。线性基是解决异或相关问题的利器，常用于求最大异或和、异或第 $k$ 小、异或方程组等问题。
+
+\textbf{核心思想：}
+\begin{itemize}
+    \item \textbf{线性空间：} 将每个数视为 $\text{GF}(2)$ 上的 $d$ 维向量（$d$ 为二进制位数），线性基即为该向量空间的一组基。
+    \item \textbf{上三角形式：} 维护一个长度为 $d$ 的数组 $basis$，其中 $basis[i]$ 的最高位为第 $i$ 位（若存在），高位向低位消去，保证基向量之间线性无关。
+    \item \textbf{插入过程：} 从高位到低位扫描 $x$ 的二进制位，若 $x$ 的第 $i$ 位为 $1$：若 $basis[i]$ 为空则存入并返回；否则 $x \gets x \oplus basis[i]$ 继续。
+    \item \textbf{重构（rebuild）：} 将基化为最简形式，使得 $basis[i]$ 的最高位唯一为 $i$，且该位不出现在其他基向量中，从而支持第 $k$ 小查询。
+    \item \textbf{第 $k$ 小：} 重构后基向量个数为 $m$，张成的不同异或值恰有 $2^m$ 个（若原集合可异或出 $0$ 则为 $2^m$ 个，否则 $2^m-1$ 个），将 $k$ 二进制分解后对应选取基向量即可。
+\end{itemize}
+
+\textbf{时间复杂度：}
+\begin{itemize}
+    \item 插入 / 查询最大异或值 / 判断可表示性：$O(\log V)$。
+    \item 重构：$O(\log^2 V)$。
+    \item 第 $k$ 小查询：重构后 $O(\log V)$。
+    \item 合并两个线性基：$O(\log^2 V)$。
+\end{itemize}
+
+\lstinputlisting[language=C++]{codes/10-linear-algebra-04.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 上述代码以 $60$ 位整数为例，适用于 $10^{18}$ 范围的数据；若需处理 $32$ 位整数，将 \texttt{LOG} 改为 $31$ 即可。
+    \item 线性基不保存原始数据（除非在插入时做额外记录），仅维护张成空间。
+    \item 若原集合可以异或出 $0$，则第 $k$ 小查询中 $k=0$ 对应 $0$；否则 $k=0$ 对应最小非零值。
+    \item 需要判断 $0$ 是否可被表示时，只需额外维护一个 \texttt{bool hasZero} 标记即可。
+\end{itemize}

@@ -1,0 +1,64 @@
+\section{博弈论}
+
+
+\subsection{Nim 游戏与 SG 函数 (Nim Game and Sprague--Grundy Theorem)}
+
+\textbf{用途：}
+判定\textbf{公平组合游戏} (Impartial Combinatorial Game)：两名玩家轮流行动、局面完全可见、同一局面下双方可选操作相同、无法行动者输。SG 函数把任意此类游戏统一化归为 Nim 游戏，是博弈论判定的核心工具。
+
+\textbf{核心概念：}
+\begin{itemize}
+    \item \textbf{Nim 游戏：} $n$ 堆石子，每次从某一堆取走任意多个。结论：先手必胜 $\iff$ 所有堆数的异或和（Nim 和）$\ne 0$。
+    \item \textbf{P 局面 / N 局面：} $P$ (Previous) 表示「即将行动的玩家必败」，$N$ (Next) 表示必胜；无法行动的终态是 $P$ 局面。
+    \item \textbf{mex：} 集合中未出现的最小非负整数 (Minimum EXcluded)，如 $\operatorname{mex}\{0,1,3\}=2$、$\operatorname{mex}\{\}=0$。
+    \item \textbf{SG 函数：} 无后继的终态 $\operatorname{SG}=0$；一般地
+    \[ \operatorname{SG}(u) \;=\; \operatorname{mex}\{\operatorname{SG}(v) \;:\; v \text{ 为 } u \text{ 的后继局面}\}, \]
+    且 $\operatorname{SG}(u)=0 \iff u$ 为 $P$ 局面。
+    \item \textbf{SG 定理 (Sprague--Grundy)：} 总游戏由若干\textbf{独立}子游戏组成时，总局面等价于 Nim：$\operatorname{SG}_{\text{总}}=\bigoplus_i \operatorname{SG}_i$；先手必胜 $\iff \operatorname{SG}_{\text{总}}\ne 0$。
+\end{itemize}
+
+\textbf{算法流程：}
+\begin{enumerate}
+    \item 把游戏规则建模为状态图 (DAG)：节点为局面，有向边为一步合法操作。
+    \item 记忆化搜索自底向上求每个局面的 SG 值：枚举全部后继，取后继 SG 集合的 mex。
+    \item 多个独立子游戏并存时，将各子游戏 SG 值异或，按 SG 定理判定先后手胜负。
+\end{enumerate}
+
+\textbf{时间复杂度：} 记忆化搜索 $O(\text{状态数}+\text{边数})$（mex 排序均摊近似线性）；Nim 判定 $O(n)$。
+
+\lstinputlisting[language=C++]{codes/11-game-theory-01.cpp}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 一堆大小为 $a$ 的取石子游戏，SG 值恰为 $a$（每次可取任意个 $\Rightarrow$ 后继 SG 集合为 $\{0,1,\dots,a-1\}$），代入 SG 定理立即得到 Nim 结论。
+    \item 需要输出必胜策略时：先手第一步应把局面移动到任意一个 SG 值为 $0$ 的后继。
+    \item 状态图必须是\textbf{无环}的；存在循环局面的游戏（如「报数不能超过上限」类）需另行分析。
+\end{itemize}
+
+\subsection{常见组合博弈结论 (Classic Impartial Games)}
+
+\textbf{用途：}
+以下经典模型存在闭式判定结论，识别出模型后直接套用即可，无需建图求 SG。
+
+\textbf{结论速查表：}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\textbf{模型} & \textbf{规则} & \textbf{先手必胜条件} \\ \hline
+巴什博弈 (Bash) & 一堆 $n$ 颗，每次取 $1\sim m$ 颗，取最后一颗者胜 & $n \bmod (m+1) \ne 0$ \\ \hline
+威佐夫博弈 (Wythoff) & 两堆，从一堆取任意颗或两堆同取等量，取最后一颗者胜 & $(a,b)$ 非奇异局势，即 $\min(a,b) \ne \lfloor d\varphi \rfloor$，$d=|a-b|$ \\ \hline
+阶梯博弈 (Staircase) & 台阶石子逐级下移，移到地面即消失，无法行动者败 & 奇数号台阶石子异或和 $\ne 0$ \\ \hline
+Anti-Nim & 与 Nim 相同，但\textbf{取走最后一颗者输} & 全 $1$ 且异或和 $=0$，或存在 $>1$ 的堆且异或和 $\ne 0$ \\ \hline
+\end{tabularx}
+\end{center}
+
+\textbf{说明：}
+\begin{itemize}
+    \item 威佐夫博弈中 $\varphi=\dfrac{\sqrt5+1}{2}$ 为黄金比；奇异局势 $(\lfloor k\varphi\rfloor,\ \lfloor k\varphi^2\rfloor)$ 成对出现且互不相同，覆盖了所有必败局面。
+    \item 阶梯博弈（台阶从地面 $0$ 号起编号）等价于「只把\textbf{奇数号}台阶视作 Nim 堆」：偶数号石子被移动后，对手总能把它再移一级而镜像抵消，故只有奇数号台阶有效。
+    \item Anti-Nim 的「全 $1$」特判分支极易遗漏；类似的「取走最后一颗者输」变体 (Anti-SG) 结论形式相同。
+    \item 以上结论均可用 SG 函数暴力验证小规模数据后再套用，防止记忆偏差。
+\end{itemize}
+
+\lstinputlisting[language=C++]{codes/11-game-theory-02.cpp}
