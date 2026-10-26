@@ -7,10 +7,10 @@
 % ==========================================
 \RequirePackage{geometry}      % 页面布局
 \RequirePackage{xcolor}        % 颜色定义
-\RequirePackage{titlesec}      % 标题格式
 \RequirePackage{fancyhdr}      % 页眉页脚
 % \RequirePackage{ctex}        % 中文支持（由 ctexart 文档类提供）
-\RequirePackage{hyperref}      % 超链接
+% 使用 ctex 原生标题配置，避免 titlesec 与 hyperref 的跨页锚点冲突。
+\RequirePackage[hidelinks]{hyperref} % 超链接
 
 % ==========================================
 % 2. 定义全局颜色变量
@@ -34,17 +34,20 @@
 % ==========================================
 % 4. 标题样式定制
 % ==========================================
-\titleformat{\section}
-  {\Large\bfseries\color{PrimaryColor}}
-  {\thesection}{1em}{}
-  
-\titleformat{\subsection}
-  {\large\bfseries\color{PrimaryColor!80}}
-  {\thesubsection}{1em}{}
-
-\titleformat{\subsubsection}
-  {\normalsize\bfseries\color{PrimaryColor!60}}
-  {\thesubsubsection}{1em}{}
+\ctexset{
+  section = {
+    format = \Large\bfseries\raggedright\color{PrimaryColor},
+    aftername = \hspace{1em}
+  },
+  subsection = {
+    format = \large\bfseries\raggedright\color{PrimaryColor!80},
+    aftername = \hspace{1em}
+  },
+  subsubsection = {
+    format = \normalsize\bfseries\raggedright\color{PrimaryColor!60},
+    aftername = \hspace{1em}
+  }
+}
 
 % ==========================================
 % 5. 页眉页脚

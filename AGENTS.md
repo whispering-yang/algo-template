@@ -38,12 +38,11 @@
 ## 编译命令
 
 ```bash
-# 在项目根目录执行（连跑两遍以生成目录）
-xelatex -interaction=nonstopmode main.tex
-xelatex -interaction=nonstopmode main.tex
+# 在项目根目录执行，自动重复编译直到目录和交叉引用稳定
+latexmk -xelatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-编译产物输出到项目根目录。第二遍编译用于让目录（TOC）与页码正确生成。
+编译产物输出到项目根目录。手动运行 XeLaTeX 时，干净构建通常至少需要三遍：先生成目录数据，再排入目录并更新正文页码，最后把更新后的页码写入目录；若分页仍变化，继续编译至稳定。发布前使用 `python scripts/check_pdf_toc.py main.pdf` 核对目录显示页码与链接目标页面的印刷页码（依赖 `pypdf` 和 Poppler 的 `pdftotext`）。
 
 ## 添加新内容的规则
 

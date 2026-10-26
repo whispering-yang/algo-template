@@ -23,12 +23,25 @@ jobs:
             texlive-xetex \
             texlive-lang-chinese \
             texlive-latex-extra \
-            texlive-fonts-recommended
+            texlive-fonts-recommended \
+            latexmk \
+            poppler-utils
 
-      - name: Compile (twice for TOC)
+      - name: Set up Python for PDF validation
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PDF validation dependency
+        run: python -m pip install 'pypdf>=5,<7'
+
+      # 干净构建时，第二遍插入目录仍会改变正文页码，必须继续编译至收敛。
+      - name: Compile until TOC and references stabilize
         run: |
-          xelatex -interaction=nonstopmode main.tex
-          xelatex -interaction=nonstopmode main.tex
+          latexmk -xelatex -interaction=nonstopmode -halt-on-error -file-line-error main.tex
+
+      - name: Verify TOC page numbers against PDF destinations
+        run: python scripts/check_pdf_toc.py main.pdf
 
       - name: Rename PDF with tag
         run: cp main.pdf "algo-template-${{ github.ref_name }}.pdf"

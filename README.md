@@ -26,14 +26,15 @@
 
 ## 编译
 
-在项目根目录执行（连跑两遍以生成目录）：
+在项目根目录执行，自动重复编译直到目录和交叉引用稳定：
 
 ```bash
-xelatex -interaction=nonstopmode main.tex
-xelatex -interaction=nonstopmode main.tex
+latexmk -xelatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-编译产物输出到项目根目录，第二遍编译用于让目录（TOC）与页码正确生成。
+编译产物输出到项目根目录。若手动运行 XeLaTeX，干净构建通常至少需要三遍：第一遍生成目录数据，第二遍排入目录并更新正文页码，第三遍将新页码写入目录；若分页仍有变化，需要继续编译。不要仅以“两遍编译成功”判断目录已正确。
+
+发布工作流使用同样的收敛编译，并在上传前运行 `python scripts/check_pdf_toc.py main.pdf`，逐项比较目录显示的页码与 PDF 链接目标页面的印刷页码。校验需要 `pypdf`（`python -m pip install 'pypdf>=5,<7'`）和 Poppler 的 `pdftotext`。
 
 ## 贡献 / 添加新内容
 
