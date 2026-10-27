@@ -1,25 +1,5 @@
 \section{标准库方法}
 
-\subsection{抗卡整数哈希 (Randomized Integer Hash)}
-
-\textbf{用途：} 为 \code{unordered\_map} / \code{unordered\_set} 的整数键提供带随机盐的自定义哈希，降低预先构造的碰撞数据使哈希表退化、导致超时的风险。
-
-\begin{itemize}
-  \item \textbf{碰撞攻击：} 某些实现的默认整数哈希接近恒等映射，攻击者可按桶数构造大量落入同一桶的键；连续插入可能退化到 $O(n^2)$。
-  \item \textbf{混合函数：} 使用 \code{splitmix64} 的移位、异或和乘法混合整数各位；所有运算在 \code{uint64\_t} 上进行，溢出按模 $2^{64}$ 处理。
-  \item \textbf{运行时随机盐：} 以 \code{steady\_clock} 的计数值初始化局部静态常量，使攻击者难以提前确定映射。盐在整次运行中固定，保证同一键的哈希值稳定；不能每次调用时重新取时钟或随机数。
-  \item \textbf{键的范围：} 适用于不超过 64 位的整数，包括 \code{int}、\code{long long} 和 \code{uint64\_t}；负数转换为无符号整数后按模 $2^{64}$ 处理。容器通过键的相等比较区分元素，哈希碰撞不会导致答案错误。
-  \item \textbf{容量设置：} 先设置 \code{max\_load\_factor(0.7f)}，再用 \code{reserve(n)} 按预计不同键数量预留空间。两者减少扩容和平均桶长，但不能代替随机化哈希；\code{reserve} 后桶数仍可能变化，不要长期保存跨扩容的迭代器。
-\end{itemize}
-
-\textbf{时间复杂度：} 单次哈希 $O(1)$；分布良好时，查询、插入和删除平均 $O(1)$，插入扩容成本按均摊计，存储 $n$ 个不同键占用 $O(n)$ 空间。随机化不提供最坏情况保证，单次容器操作仍可能为 $O(n)$。
-
-\begin{quote}
-  \textbf{注意：} 这是竞赛中防预构造碰撞的实用措施，不是密码学哈希；时钟盐也不是安全随机数。需要稳定的最坏 $O(\log n)$ 上界或有序遍历时，使用 \code{map} / \code{set}。示例读入 $n$ 个有符号 64 位整数，统计频次并输出不同整数的数量；无符号 64 位键需将容器键类型和输入变量一并改为 \code{uint64\_t}。
-\end{quote}
-
-\lstinputlisting[language=C++]{codes/01-stdlib-05.cpp}
-
 \subsection{数学库}
 
 \textbf{头文件}

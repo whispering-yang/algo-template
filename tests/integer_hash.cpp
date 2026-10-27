@@ -3,7 +3,7 @@
 using namespace std;
 
 #define main integer_hash_example_main
-#include "../codes/01-stdlib-05.cpp"
+#include "../codes/13-utilities-10.cpp"
 #undef main
 
 void require(bool ok, const string &message) {
@@ -11,11 +11,12 @@ void require(bool ok, const string &message) {
 }
 
 int main() {
-    CustomHash hash;
+    SplitMix64 hash;
+    SplitMix64 copied_hash = hash;
     vector<long long> keys = {LLONG_MIN, LLONG_MAX, -1, 0, 1};
     mt19937_64 rng(20261027);
-    unordered_map<long long, int, CustomHash> actual;
-    unordered_set<long long, CustomHash> unique;
+    unordered_map<long long, int, SplitMix64> actual;
+    unordered_set<long long, SplitMix64> unique;
     map<long long, int> expected;
     actual.max_load_factor(0.7f);
     actual.reserve(50000);
@@ -29,21 +30,25 @@ int main() {
         keys.push_back(i % 2 ? -x : x);
     }
     for (long long x : keys) {
-        size_t before = hash(x);
+        uint64_t before = hash(x);
         ++actual[x];
         ++expected[x];
         unique.insert(x);
-        require(hash(x) == before && CustomHash{}(x) == before,
+        require(hash(x) == before && copied_hash(x) == before,
                 "hash must stay stable across calls and hasher copies");
     }
     // 强制 rehash 后再次查询，检查哈希器状态是否稳定。
     actual.rehash(actual.bucket_count() * 2);
     unique.rehash(unique.bucket_count() * 2);
+    auto copied_map = actual;
+    auto copied_set = unique;
     require(actual.size() == expected.size(), "map size");
     require(unique.size() == expected.size(), "set size");
     for (auto [x, count] : expected) {
         require(actual.at(x) == count && unique.count(x) == 1,
                 "signed boundary / random / arithmetic key lookup");
+        require(copied_map.at(x) == count && copied_set.count(x) == 1,
+                "container copies must preserve hasher seeds");
     }
     for (size_t i = 0; i < keys.size(); i += 3) {
         actual.erase(keys[i]);
@@ -54,12 +59,12 @@ int main() {
         require(actual.count(x) == expected.count(x), "erase map");
         require(unique.count(x) == expected.count(x), "erase set");
     }
-    unordered_map<uint64_t, int, CustomHash> unsigned_keys;
+    unordered_map<uint64_t, int, SplitMix64> unsigned_keys;
     vector<uint64_t> extremes = {0, 1, uint64_t{1} << 63, UINT64_MAX};
     for (int i = 0; i < static_cast<int>(extremes.size()); ++i)
         unsigned_keys[extremes[i]] = i;
     for (int i = 0; i < static_cast<int>(extremes.size()); ++i)
         require(unsigned_keys.at(extremes[i]) == i, "unsigned 64-bit key");
     cout << "PASS: " << keys.size()
-         << " signed keys, unsigned extremes, rehash and erase\n";
+         << " signed keys, unsigned extremes, copies, rehash and erase\n";
 }

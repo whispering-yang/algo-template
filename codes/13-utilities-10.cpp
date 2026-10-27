@@ -1,19 +1,18 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-struct CustomHash {
-    static uint64_t splitmix64(uint64_t x) {
-        x += 0x9e3779b97f4a7c15ULL;
+struct SplitMix64 {
+    uint64_t seed;
+    SplitMix64() {
+        uint64_t t = chrono::steady_clock::now().time_since_epoch().count();
+        uint64_t s = chrono::system_clock::now().time_since_epoch().count();
+        seed = (t * 131 + s) * 0x9e3779b97f4a7c15ULL ^ (uint64_t)(uintptr_t)this;
+    }
+    uint64_t operator()(uint64_t x) const {
+        x += seed;
         x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
         x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
         return x ^ (x >> 31);
-    }
-
-    size_t operator()(uint64_t x) const {
-        // 整次运行固定；不能在每次查询时重新生成随机盐。
-        static const uint64_t salt =
-            chrono::steady_clock::now().time_since_epoch().count();
-        return static_cast<size_t>(splitmix64(x + salt));
     }
 };
 
@@ -23,8 +22,8 @@ int main() {
 
     int n;
     cin >> n;
-    unordered_map<long long, int, CustomHash> frequency;
-    unordered_set<long long, CustomHash> seen;
+    unordered_map<long long, int, SplitMix64> frequency;
+    unordered_set<long long, SplitMix64> seen;
     // 先设置负载因子，再按预计的不同键数量预留空间。
     frequency.max_load_factor(0.7f);
     seen.max_load_factor(0.7f);
