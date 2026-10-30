@@ -21,10 +21,16 @@ namespace zb {
 namespace fw {
 #include "../codes/06-graph-11.cpp"
 }
+namespace hd {
+#include "../codes/06-graph-10.cpp"
+}
+namespace nd {
+#include "../codes/06-graph-23.cpp"
+}
 
 using Edge = tuple<int, int, long long>;
 constexpr long long LIM = 1LL << 55;
-int weighted_cases = 0, binary_cases = 0;
+int weighted_cases = 0, binary_cases = 0, nonnegative_cases = 0;
 
 void require(bool ok, const string &message) {
     if (!ok) throw runtime_error(message);
@@ -109,6 +115,30 @@ void check_binary(int n, const vector<Edge> &edges) {
     }
 }
 
+void check_nonnegative(int n, const vector<Edge> &edges) {
+    nonnegative_cases++;
+    auto d = oracle(n, edges);
+    hd::adj.assign(n + 1, {});
+    nd::adj.assign(n + 1, {});
+    hd::dist.resize(n + 1);
+    nd::dist.resize(n + 1);
+    nd::done.resize(n + 1);
+    for (auto [u, v, w] : edges) {
+        hd::adj[u].emplace_back(v, w);
+        nd::adj[u].emplace_back(v, w);
+    }
+    // Multiple calls also check that distances, done marks and heap state reset correctly.
+    for (int s = 1; s <= n; s++) {
+        hd::dijkstra(s);
+        nd::dijkstra(s);
+        for (int v = 1; v <= n; v++) {
+            long long expected = d[s][v] == LIM ? hd::INF : d[s][v];
+            require(hd::dist[v] == expected, "heap Dijkstra distance");
+            require(nd::dist[v] == expected, "naive Dijkstra distance");
+        }
+    }
+}
+
 int main() {
     check_weighted(1, {});
     check_weighted(1, {{1, 1, -1}});
@@ -123,6 +153,10 @@ int main() {
     check_weighted(2, parallel);  // many relaxations do not imply a negative cycle
     check_binary(4, {{1, 2, 1}, {1, 3, 0}, {3, 2, 0}, {2, 4, 0}, {4, 3, 0}});
     check_binary(1, {});
+    check_nonnegative(1, {});
+    check_nonnegative(2, {{1, 2, 0}});
+    check_nonnegative(4, {{1, 1, 5}, {1, 2, 3}, {1, 2, 4}, {2, 4, 2000000000000LL}, {3, 4, 7}});  // self loop, parallel edges, 64-bit distance
+    check_nonnegative(3, {{2, 3, 0}, {3, 2, 0}});  // unreachable zero cycle
 
     mt19937 rng(20261014);
     for (int t = 0; t < 2000; t++) {
@@ -155,6 +189,16 @@ int main() {
         }
         check_binary(n, edges);
     }
+    for (int t = 0; t < 2000; t++) {
+        int n = 1 + rng() % 9, m = rng() % (2 * n * n + 1);
+        vector<Edge> edges;
+        for (int i = 0; i < m; i++) {
+            int u = 1 + rng() % n, v = 1 + rng() % n;
+            edges.emplace_back(u, v, rng() % 21);  // weights in [0, 20]
+        }
+        check_nonnegative(n, edges);
+    }
     cout << "PASS: " << weighted_cases << " weighted graphs, " << binary_cases
-         << " binary graphs (all sources, seed 20261014)\n";
+         << " binary graphs, " << nonnegative_cases
+         << " nonnegative graphs (all sources, seed 20261014)\n";
 }

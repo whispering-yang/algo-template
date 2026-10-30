@@ -172,7 +172,7 @@
   \hline
   0-1 BFS & 所有边权均为 $0$ 或 $1$，单源 & $O(n+m)$ \\
   \hline
-  Dijkstra & 所有边权非负，单源 & $O((n+m)\log n)$ \\
+  Dijkstra & 所有边权非负，单源；稠密图可用朴素版 & 堆 $O((n+m)\log n)$，朴素 $O(n^2+m)$ \\
   \hline
   Bellman--Ford & 允许负权，单源；可检测可达负环 & $O(nm+n)$ \\
   \hline
@@ -196,9 +196,10 @@
   \item 维护距离数组 $\operatorname{dist}$，表示起点 $s$ 到各点的当前最短距离。
   \item 每次从「尚未确定最短路」的点中选出 $\operatorname{dist}$ 最小的点 $u$，将其标记为已确定，并用它松弛所有出边 $(u, v, w)$。
   \item 由于边权非负，$u$ 一旦被选出，其 $\operatorname{dist}$ 值即为最终最短路（贪心策略的正确性保证）。
+  \item 堆优化版与朴素版的差别只在「选最小点」这一步：前者用小根堆 $O(\log n)$ 取出，后者线性扫描 $O(n)$ 选出。
 \end{itemize}
 
-\textbf{算法流程：}
+\textbf{算法流程（堆优化版）：}
 
 \begin{enumerate}
   \item 初始化 $\operatorname{dist}[s] = 0$，其余为 $+\infty$，将 $(0, s)$ 入堆。
@@ -207,13 +208,31 @@
   \item 重复步骤 2--3，直至堆空。
 \end{enumerate}
 
-\textbf{时间复杂度：} 二叉堆优化后为 $O((n + m) \log n)$。
+\textbf{时间复杂度（堆优化版）：} $O((n + m) \log n)$，空间 $O(n + m)$。每个点只以有效状态出堆一次，出边扫描共 $O(n + m)$；每次松弛成功才入堆，加上初始状态总入堆不超过 $m + 1$ 次，出入堆各付一次 $O(\log m)$ 的堆调整。由 $m \le n^2$ 得 $\log m = O(\log n)$，合并即得总复杂度。
+
+\textbf{算法流程（朴素版）：}
+
+\begin{enumerate}
+  \item 初始化 $\operatorname{dist}[s] = 0$，其余为 $+\infty$，\code{done} 数组全为 \code{false}。
+  \item 重复至多 $n$ 轮：线性扫描所有未确定点，选出 $\operatorname{dist}$ 最小的点 $u$；若最小值仍为 $+\infty$，说明剩余点均不可达，提前结束。
+  \item 置 $\operatorname{done}[u]$ 为 \code{true}，遍历 $u$ 的出边完成松弛，松弛成功也无需任何堆操作。
+\end{enumerate}
+
+\textbf{时间复杂度（朴素版）：} $O(n^2 + m)$，空间 $O(n + m)$。$n$ 轮选点每轮线性扫描 $O(n)$，共 $O(n^2)$；每条边只在其起点被确定后扫描一次，共 $O(m)$。若改用邻接矩阵存储，松弛并入按行扫描，总时间为 $O(n^2)$，但空间升为 $O(n^2)$。
+
+\textbf{版本选择：}
+\begin{itemize}
+  \item \textbf{堆优化版：} $m$ 与 $n$ 同阶的稀疏图（树、网格图等）中为 $O((n+m)\log n)$，远优于朴素版，是最常用的版本。
+  \item \textbf{朴素版：} $m$ 接近 $n^2$ 的稠密图中，堆优化版退化为 $O(n^2 \log n)$，朴素版保持 $O(n^2 + m) = O(n^2)$ 且常数更小；点数不大（如 $n \le 5000$）时也可直接选用。
+\end{itemize}
 
 \begin{quote}
 \textbf{注意：} Dijkstra 仅适用于边权非负的图。图中含负权边时必须改用 Bellman-Ford 或 SPFA。
 \end{quote}
 
 \lstinputlisting[language=C++]{codes/06-graph-10.cpp}
+
+\lstinputlisting[language=C++]{codes/06-graph-23.cpp}
 
 \subsection{负权单源最短路 (SPFA)}
 

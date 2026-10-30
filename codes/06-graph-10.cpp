@@ -2,7 +2,6 @@
 using namespace std;
 
 constexpr long long INF = 0x3f3f3f3f3f3f3f3fLL;
-constexpr int N = 1e5 + 5;
 int n, m, s;
 vector<long long> dist;
 vector<vector<pair<int, long long>>> adj;
