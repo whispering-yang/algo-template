@@ -43,14 +43,14 @@
 
 \subsection{Python 对拍器}
 
-批量对拍两个程序的输出，需要准备三个 C++17 源文件，脚本会先自动编译：
+批量对拍两个程序的输出，需要准备三个 C++ 源文件，脚本会先使用 GNU C++20、\code{-O2} 和 \code{-DONLINE\_JUDGE} 自动编译：
 \begin{itemize}
-    \item \code{gen}：随机数据生成器（可用本章前几节的生成器编译而来）
-    \item \code{my}：你的待测程序
-    \item \code{std}：标准/暴力程序
+    \item \code{gen.cpp}：随机数据生成器（可用本章前几节的生成器）
+    \item \code{sol.cpp}：你的待测程序（由 \code{sol} 指定）
+    \item \code{brute.cpp}：标准/暴力程序（由 \code{std} 指定）
 \end{itemize}
 
-在这三个源文件所在目录运行脚本。使用 \code{subprocess.run} 检查退出码，编译失败、运行错误或单次运行超时（默认 $5$ 秒）都会明确报错并立即终止。每轮先把输入保存到 \code{in}，按空白分隔的 token 比较输出；不一致时保存 \code{my\_out.txt}、\code{std\_out.txt} 并停止。此比较适用于普通文本答案，浮点容差或 Special Judge 题目需另写比较逻辑。
+在这三个源文件所在目录运行脚本，可修改 \code{sol}、\code{std}、\code{gen} 指定文件名。每次执行前打印命令；退出码非零时输出 Runtime Error、退出码、标准输出和标准错误并终止，单次编译或运行超过默认 $5$ 秒时捕获超时异常，打印 Time Limit Exceed 并终止。每轮将输入保存到 \code{in}，对输出调用 \code{rstrip()} 去除末尾空白后逐字符比较，内部空白仍参与比较；不一致时打印两份输出并停止，一致时打印绿色 AC。浮点容差或 Special Judge 题目需另写比较逻辑。
 
 \lstinputlisting[language=Python]{codes/13-utilities-08.py}
 
