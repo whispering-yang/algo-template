@@ -22,9 +22,7 @@
     ├── 10-linear-algebra.tex  # 线性代数
     ├── 11-game-theory.tex     # 博弈论
     ├── 12-offline.tex         # 离线算法
-    ├── 13-utilities.tex       # 实用工具
-    ├── 14-debug.tex           # 本地调试
-    └── 15-optimization.tex    # 常数优化
+    └── 13-utilities.tex       # 实用工具（含本地调试、常数优化、抗卡整数哈希）
 ```
 
 ## 编译

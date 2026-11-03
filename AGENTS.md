@@ -18,7 +18,7 @@
 │   ├── 02-datastructures-01.cpp   # 并查集(数组)
 │   ├── 02-datastructures-02.cpp   # 并查集(map)
 │   ├── ...                        # 命名规则：NN-topic-序号.后缀，NN 与所属章节文件编号一致
-│   └── 15-optimization-01.cpp
+│   └── 13-utilities-13.cpp
 │
 └── sections/                     # 按主题拆分的子文档（每个文件对应一个 section）
     ├── 01-stdlib.tex             # 标准库方法
@@ -33,9 +33,7 @@
     ├── 10-linear-algebra.tex     # 线性代数
     ├── 11-game-theory.tex        # 博弈论
     ├── 12-offline.tex            # 离线算法
-    ├── 13-utilities.tex          # 实用工具
-    ├── 14-debug.tex              # 本地调试
-    └── 15-optimization.tex       # 常数优化
+    └── 13-utilities.tex          # 实用工具（含本地调试、常数优化、抗卡整数哈希）
 ```
 
 ## 编译命令

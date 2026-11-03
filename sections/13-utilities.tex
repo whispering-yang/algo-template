@@ -1,6 +1,6 @@
 \section{实用工具}
 
-本章按比赛/训练的完整工作流组织：\textbf{编译}代码 $\to$ \textbf{计时}评估性能 $\to$ \textbf{生成测试数据}（先基础随机数据，再树/图等结构化数据，最后是 Python 方案）$\to$ \textbf{对拍}验证正确性。各节由前到后依次衔接，按需取用。
+本章按比赛/训练的完整工作流组织：\textbf{编译}代码 $\to$ \textbf{计时}评估性能 $\to$ \textbf{生成测试数据}（基础随机数据与 Python 方案）$\to$ \textbf{对拍}验证正确性，出问题时用 GDB \textbf{本地调试}，被卡常时再做\textbf{常数优化}。各节由前到后依次衔接，按需取用。
 
 章末另附抗卡整数哈希，供比赛中使用哈希表时直接取用。
 
@@ -53,6 +53,77 @@
 在这三个源文件所在目录运行脚本，可修改 \code{sol}、\code{std}、\code{gen} 指定文件名。每次执行前打印命令；退出码非零时输出 Runtime Error、退出码、标准输出和标准错误并终止，单次编译或运行超过默认 $5$ 秒时捕获超时异常，打印 Time Limit Exceed 并终止。每轮将输入保存到 \code{in}，对输出调用 \code{rstrip()} 去除末尾空白后逐字符比较，内部空白仍参与比较；不一致时打印两份输出并停止，一致时打印绿色 AC。浮点容差或 Special Judge 题目需另写比较逻辑。
 
 \lstinputlisting[language=Python]{codes/13-utilities-08.py}
+
+\subsection{Linux 系统取消栈空间限制}
+
+\lstinputlisting[language=bash]{codes/13-utilities-11.sh}
+
+\subsection{GDB 命令行调试 (Command-Line GDB Debugging)}
+
+\textbf{用途：} GDB (GNU Debugger) 是 Linux 下强大的命令行调试工具，用于定位段错误、除零异常、逻辑错误等问题。结合 \code{-g} 编译选项可查看源码级信息。
+
+\textbf{核心概念：}
+\begin{itemize}
+  \item \textbf{断点 (Breakpoint)}：在指定位置暂停程序执行。
+  \item \textbf{单步执行 (Step/Next)}：逐行跟踪程序，观察变量变化。
+  \item \textbf{调用栈 (Backtrace)}：查看函数调用链，定位崩溃现场。
+  \item \textbf{条件断点}：满足特定条件时才触发暂停，避免频繁中断。
+  \item \textbf{Core Dump}：程序崩溃时保存的内存快照，用于事后分析。
+\end{itemize}
+
+\textbf{编译要求：} 使用 \code{-g} 选项生成调试信息，建议关闭优化以保持源码对应关系。
+\begin{quote}
+  \code{g++ -std=c++17 -g -Wall -O0 -o program source.cpp}
+\end{quote}
+
+\textbf{常用 GDB 命令速查：}
+
+\noindent\begin{tabularx}{\textwidth}{c|X}
+  \hline
+  \textbf{命令} & \textbf{说明} \\
+  \hline
+  \code{b main} / \code{break 10} & 在函数或行号处设断点 \\
+  \code{r} / \code{run} & 运行程序（可带命令行参数） \\
+  \code{s} / \code{step} & 步入函数内部 \\
+  \code{n} / \code{next} & 步过，不进入函数 \\
+  \code{c} / \code{continue} & 继续执行到下一断点 \\
+  \code{p var} / \code{print var} & 打印变量值 \\
+  \code{display var} & 每次暂停自动显示变量 \\
+  \code{bt} / \code{backtrace} & 查看调用栈 \\
+  \code{f 2} / \code{frame 2} & 切换到指定栈帧 \\
+  \code{info locals} & 查看所有局部变量 \\
+  \code{info breakpoints} & 查看所有断点 \\
+  \code{delete 1} & 删除指定编号的断点 \\
+  \code{set var x = 42} & 运行时修改变量值 \\
+  \code{list} & 查看当前行附近源代码 \\
+  \code{q} / \code{quit} & 退出 GDB \\
+  \hline
+\end{tabularx}
+
+\textbf{调试流程：}
+\begin{enumerate}
+  \item \textbf{编译：} \code{g++ -g -Wall -O0 -o debug source.cpp}
+  \item \textbf{启动：} \code{gdb ./debug}
+  \item \textbf{设断点：} \code{(gdb) b main} 或 \code{(gdb) b 行号}
+  \item \textbf{运行：} \code{(gdb) r}
+  \item \textbf{单步跟踪：} 交替使用 \code{s}（步入）和 \code{n}（步过）
+  \item \textbf{查看变量：} \code{(gdb) p 变量名}
+  \item \textbf{定位崩溃：} 程序崩溃后输入 \code{bt} 查看调用栈，\code{f 0} 进入最内层，\code{info locals} 查看局部变量
+\end{enumerate}
+
+\textbf{GDB 命令参考（含完整调试流程）：}
+
+\lstinputlisting[language=bash]{codes/13-utilities-12.gdb}
+
+\subsection{常数优化：编译器优化开关}
+
+\textbf{用途：} 算法复杂度正确却被卡常（TLE）时，在代码开头加入 \code{\#pragma} 优化指令，或使用更强的编译选项，让编译器自动完成循环展开、向量化等优化，是最简单有效的提效手段。
+
+\lstinputlisting[language=C++]{codes/13-utilities-13.cpp}
+
+\begin{quote}
+  \textbf{注意：} 部分 OJ 会忽略 \code{\#pragma}（或要求指定编译选项），此时应改用 \code{-O2} / \code{-Ofast} / \code{-march=native} 编译；本地调试时建议不加优化指令，以免影响断点与变量查看。
+\end{quote}
 
 \subsection{抗卡整数哈希 (Randomized Integer Hash)}
 
