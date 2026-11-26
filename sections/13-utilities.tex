@@ -1,6 +1,6 @@
 \section{实用工具}
 
-本章按比赛/训练的完整工作流组织：\textbf{编译}代码 $\to$ \textbf{计时}评估性能 $\to$ \textbf{生成测试数据}（基础随机数据与 Python 方案）$\to$ \textbf{对拍}验证正确性，出问题时用 GDB \textbf{本地调试}，被卡常时再做\textbf{常数优化}。各节由前到后依次衔接，按需取用。
+本章按比赛/训练的完整工作流组织：\textbf{编译}代码 $\to$ \textbf{计时}评估性能 $\to$ \textbf{生成测试数据}（基础随机数据与 Python 方案）$\to$ \textbf{对拍}验证正确性，出问题时用\textbf{运行时检查}和 GDB 本地调试，被卡常时再做\textbf{常数优化}。各节由前到后依次衔接，按需取用。
 
 章末另附抗卡整数哈希，供比赛中使用哈希表时直接取用。
 
@@ -57,6 +57,25 @@
 \subsection{Linux 系统取消栈空间限制}
 
 \lstinputlisting[language=bash]{codes/13-utilities-11.sh}
+
+\subsection{本地调试编译选项 (Debug Build Flags)}
+
+\textbf{用途：} 本地跑样例或对拍时，通过编译器警告、运行时检查和标准库断言定位越界、溢出等错误。以下命令面向 Linux / WSL 下使用 libstdc++ 的 GCC。
+
+\begin{itemize}
+  \item \code{-Wall -Wextra} 开启常用编译警告。\code{-g} 生成调试信息，\code{-Og} 保留适合调试的优化级别，\code{-fno-omit-frame-pointer} 有助于获得调用栈。
+  \item \code{-fsanitize=address} 启用 AddressSanitizer (ASan)，检查堆、栈和全局对象的部分内存越界，以及释放后使用等问题。报告中可查看违规访问位置、调用栈及相关内存区域。
+  \item \code{-fsanitize=undefined} 启用 UndefinedBehaviorSanitizer (UBSan)，检查有符号整数溢出、整数除零、非法移位等未定义行为。加上 \code{-fno-sanitize-recover=undefined} 可在首次发现此类错误时终止，以便对拍器捕获非零退出码。
+  \item \code{-D\_GLIBCXX\_ASSERTIONS} 开启 libstdc++ 的轻量前置条件检查。例如 \code{vector} 的 \code{operator[]} 会检查下标小于 \code{size()}，能捕获 \code{reserve()} 后未 \code{resize()} 就写入元素的错误，即使访问仍在已分配的内存内。
+  \item \code{-D\_GLIBCXX\_DEBUG} 开启 libstdc++ 的调试模式，含上述断言及更全面的迭代器检查。该模式会改变部分容器类型的布局，跨源文件传递这些容器时，各源文件须统一使用此模式重新编译。
+\end{itemize}
+
+\textbf{示例命令}
+\lstinputlisting[language=bash]{codes/13-utilities-14.sh}
+
+\begin{quote}
+  \textbf{注意：} 分开编译和链接时，两步都要传入相同的 \code{-fsanitize=...} 选项。若当前工具链缺少 \code{libasan} 或 \code{libubsan}，可在本地先只开编译警告和标准库断言，再到 Linux / WSL 上运行完整检查。运行时检查只覆盖实际执行到的路径，并会增加运行时间和内存开销。测时和提交前用目标 OJ 对应的编译选项重编。
+\end{quote}
 
 \subsection{GDB 命令行调试 (Command-Line GDB Debugging)}
 
